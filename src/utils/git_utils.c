@@ -13,10 +13,11 @@
 #include <string.h>
 
 int git_is_repository(void) {
-    int ret = system("git rev-parse --is-inside-work-tree > NUL 2>&1");
-    if (ret != 0) {
-        ret = system("git rev-parse --is-inside-work-tree > /dev/null 2>&1");
-    }
+#ifdef _WIN32
+    int ret = system("git rev-parse --is-inside-work-tree > nul 2>&1");
+#else
+    int ret = system("git rev-parse --is-inside-work-tree > /dev/null 2>&1");
+#endif
     return (ret == 0);
 }
 
