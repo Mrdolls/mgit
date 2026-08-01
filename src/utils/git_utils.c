@@ -20,10 +20,11 @@ int git_is_repository(void) {
 }
 
 int git_get_current_branch(char *buf, size_t size) {
-    FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>", "r");
-    if (!fp) {
-        fp = popen("git rev-parse --abbrev-ref HEAD", "r");
-    }
+#ifdef _WIN32
+    FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>NUL", "r");
+#else
+    FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>/dev/null", "r");
+#endif
     if (!fp) return 0;
 
     if (fgets(buf, (int)size, fp) != NULL) {
