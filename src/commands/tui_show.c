@@ -6,8 +6,15 @@
 #include <string.h>
 
 static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch, int rows, int cols) {
-    (void)cols;
     term_clear_screen();
+
+    if (cols < 70) cols = 80;
+
+    int hash_w = 7;
+    int author_w = 12;
+    int date_w = 16;
+    int subject_w = cols - (hash_w + author_w + date_w + 12);
+    if (subject_w < 20) subject_w = 20;
 
     printf("%s%s┌─────────────────────────────────────────────────────────────────────────────┐%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
     printf("%s%s│                      MGIT TUI HISTORY INSPECTOR                             │%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
@@ -30,16 +37,17 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
     for (int i = start_index; i < end_index; i++) {
         if (i == selected) {
-            printf("%s %s %-7s │ %-12.12s │ %-12.12s │ %-.40s %s\n",
+            printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s\n",
                    ANSI_BG_CYAN, ANSI_BOLD,
-                   commits[i].hash, commits[i].author, commits[i].date, commits[i].subject,
+                   commits[i].hash, commits[i].author, commits[i].date,
+                   subject_w, commits[i].subject,
                    ANSI_RESET);
         } else {
-            printf("   %s%-7s%s │ %s%-12.12s%s │ %s%-12.12s%s │ %s%-.40s%s\n",
+            printf("   %s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s%s\n",
                    ANSI_BRIGHT_YELLOW, commits[i].hash, ANSI_RESET,
                    ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
                    ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
-                   ANSI_RESET, commits[i].subject, ANSI_RESET);
+                   ANSI_RESET, subject_w, commits[i].subject, ANSI_RESET);
         }
     }
 
