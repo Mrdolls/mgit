@@ -5,6 +5,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+static void print_modal_row(int left_pad, const char *prefix, const char *text, int card_w, int is_highlighted, int is_header) {
+    for (int i = 0; i < left_pad; i++) printf(" ");
+
+    printf("%s│%s", ANSI_BRIGHT_BLUE, ANSI_RESET);
+
+    int inner_w = card_w - 2;
+    char line_buf[512];
+    snprintf(line_buf, sizeof(line_buf), "%s%s", prefix, text);
+
+    int text_len = strlen(line_buf);
+    if (text_len > inner_w) text_len = inner_w;
+
+    if (is_header) {
+        printf("%s%s%-*.*s%s", ANSI_BOLD, ANSI_BRIGHT_GREEN, inner_w, inner_w, line_buf, ANSI_RESET);
+    } else if (is_highlighted) {
+        printf("%s%s%-*.*s%s", ANSI_BG_BLUE, ANSI_BOLD, inner_w, inner_w, line_buf, ANSI_RESET);
+    } else {
+        printf("%s%-*.*s%s", ANSI_BRIGHT_GREEN, inner_w, inner_w, line_buf, ANSI_RESET);
+    }
+
+    printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+}
+
 static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch,
                      const char *head_hash, int behind_count, int ahead_count,
                      int action_menu_open, int action_selected, int rows, int cols) {
@@ -16,103 +39,68 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     if (width < 50) width = 50;
 
     if (action_menu_open) {
-        /* CENTERED ACTION MODAL VIEW */
+        /* PERFECTLY CENTERED & ALIGNED ACTION MODAL VIEW */
         int card_w = 56;
         if (card_w > cols - 4) card_w = cols - 4;
-        if (card_w < 40) card_w = 40;
+        if (card_w < 42) card_w = 42;
 
         int left_pad = (cols - card_w) / 2;
         if (left_pad < 0) left_pad = 0;
 
-        int modal_rows = 12;
+        int modal_rows = 11;
         int top_pad = (rows - modal_rows - 3) / 2;
         if (top_pad < 1) top_pad = 1;
 
         for (int i = 0; i < top_pad; i++) printf("\n");
 
-        /* Print Top Card Border */
+        /* Print Top Border */
         for (int i = 0; i < left_pad; i++) printf(" ");
         printf("%s┌", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┐%s\n", ANSI_RESET);
 
-        /* Card Header Title */
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        printf("%s│%s%s               SELECT COMMIT ACTION", ANSI_BRIGHT_BLUE, ANSI_BOLD, ANSI_BRIGHT_GREEN);
-        int p = card_w - 38;
-        for (int i = 0; i < p; i++) printf(" ");
-        printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+        /* Row 1: Header Title */
+        print_modal_row(left_pad, "  ", "SELECT COMMIT ACTION", card_w, 0, 1);
 
-        /* Divider */
+        /* Row 2: Divider */
         for (int i = 0; i < left_pad; i++) printf(" ");
         printf("%s├", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┤%s\n", ANSI_RESET);
 
-        /* Target Commit Info */
+        /* Row 3: Target Commit Info */
         char info_str[256];
         snprintf(info_str, sizeof(info_str), "Target: %s (%.25s)", commits[selected].hash, commits[selected].subject);
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        printf("%s│%s  %-*.*s%s│%s\n",
-               ANSI_BRIGHT_BLUE, ANSI_BOLD, card_w - 5, card_w - 5, info_str, ANSI_BRIGHT_BLUE, ANSI_RESET);
+        print_modal_row(left_pad, "  ", info_str, card_w, 0, 1);
 
+        /* Row 4: Divider */
         for (int i = 0; i < left_pad; i++) printf(" ");
         printf("%s├", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┤%s\n", ANSI_RESET);
 
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        printf("%s│%s", ANSI_BRIGHT_BLUE, ANSI_RESET);
-        for (int i = 0; i < card_w - 2; i++) printf(" ");
-        printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+        /* Row 5: Empty space */
+        print_modal_row(left_pad, "", "", card_w, 0, 0);
 
-        /* Option 0: Switch */
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        if (action_selected == 0) {
-            char opt[256] = " > Switch (git checkout)";
-            printf("%s│%s  %s%-*.*s%s%s│%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BG_BLUE, card_w - 6, card_w - 6, opt, ANSI_RESET, ANSI_BRIGHT_BLUE, ANSI_RESET);
-        } else {
-            char opt[256] = "   Switch (git checkout)";
-            printf("%s│%s  %s%-*.*s%s│%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, card_w - 6, card_w - 6, opt, ANSI_BRIGHT_BLUE, ANSI_RESET);
-        }
+        /* Row 6: Option 0 - Switch */
+        print_modal_row(left_pad, action_selected == 0 ? "  > " : "    ", "Switch (git checkout)", card_w, action_selected == 0, 0);
 
-        /* Option 1: Restauration */
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        if (action_selected == 1) {
-            char opt[256] = " > Restauration (git reset --hard)";
-            printf("%s│%s  %s%-*.*s%s%s│%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BG_BLUE, card_w - 6, card_w - 6, opt, ANSI_RESET, ANSI_BRIGHT_BLUE, ANSI_RESET);
-        } else {
-            char opt[256] = "   Restauration (git reset --hard)";
-            printf("%s│%s  %s%-*.*s%s│%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, card_w - 6, card_w - 6, opt, ANSI_BRIGHT_BLUE, ANSI_RESET);
-        }
+        /* Row 7: Option 1 - Restauration */
+        print_modal_row(left_pad, action_selected == 1 ? "  > " : "    ", "Restauration (git reset --hard)", card_w, action_selected == 1, 0);
 
-        /* Option 2: Cancel */
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        if (action_selected == 2) {
-            char opt[256] = " > Cancel";
-            printf("%s│%s  %s%-*.*s%s%s│%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BG_BLUE, card_w - 6, card_w - 6, opt, ANSI_RESET, ANSI_BRIGHT_BLUE, ANSI_RESET);
-        } else {
-            char opt[256] = "   Cancel";
-            printf("%s│%s  %s%-*.*s%s│%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, card_w - 6, card_w - 6, opt, ANSI_BRIGHT_BLUE, ANSI_RESET);
-        }
+        /* Row 8: Option 2 - Cancel */
+        print_modal_row(left_pad, action_selected == 2 ? "  > " : "    ", "Cancel", card_w, action_selected == 2, 0);
 
-        for (int i = 0; i < left_pad; i++) printf(" ");
-        printf("%s│%s", ANSI_BRIGHT_BLUE, ANSI_RESET);
-        for (int i = 0; i < card_w - 2; i++) printf(" ");
-        printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+        /* Row 9: Empty space */
+        print_modal_row(left_pad, "", "", card_w, 0, 0);
 
+        /* Row 10: Bottom Border */
         for (int i = 0; i < left_pad; i++) printf(" ");
         printf("%s└", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┘%s\n", ANSI_RESET);
 
-        int bottom_pad = rows - top_pad - 14;
+        int bottom_pad = rows - top_pad - 13;
         for (int i = 0; i < bottom_pad; i++) printf("\n");
 
     } else {
