@@ -97,12 +97,9 @@ int git_check_pull_status(int *behind_count, int *ahead_count) {
     *behind_count = 0;
     *ahead_count = 0;
 
-    /* Fetch latest remote refs quietly */
 #ifdef _WIN32
-    system("git fetch --quiet 2>nul");
     FILE *fp = popen("git rev-list --left-right --count HEAD...@{u} 2>nul", "r");
 #else
-    system("git fetch --quiet 2>/dev/null");
     FILE *fp = popen("git rev-list --left-right --count HEAD...@{u} 2>/dev/null", "r");
 #endif
     if (!fp) return 0;
