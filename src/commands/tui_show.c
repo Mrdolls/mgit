@@ -15,72 +15,134 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     if (width > 80) width = 80;
     if (width < 50) width = 50;
 
-    /* Header Title - Blue & Green */
-    printf("\n %s%s=== MGIT TUI HISTORY INSPECTOR ===%s\n", ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_RESET);
-    
-    /* Status Line - Blue & Green */
-    printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
-           ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
-           ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
-
-    int is_detached = (strcmp(branch, "HEAD") == 0 || strncmp(branch, "(HEAD detached", 14) == 0);
-
-    if (is_detached) {
-        printf(" | %sStatus:%s %sDetached HEAD%s\n",
-               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
-    } else if (behind_count > 0) {
-        printf(" | %sStatus:%s %sPull Needed (%d behind)%s\n",
-               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_YELLOW, behind_count, ANSI_RESET);
-    } else if (ahead_count > 0) {
-        printf(" | %sStatus:%s %sAhead (%d commits)%s\n",
-               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_CYAN, ahead_count, ANSI_RESET);
-    } else {
-        printf(" | %sStatus:%s %sUp to date%s\n",
-               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
-    }
-
-    /* Top Divider - Blue */
-    printf("%s", ANSI_BRIGHT_BLUE);
-    for (int i = 0; i < width; i++) printf("─");
-    printf("%s\n", ANSI_RESET);
-
     if (action_menu_open) {
-        /* ACTION MODAL VIEW - Blue & Green Theme */
-        printf("\n %s%sSELECT COMMIT ACTION%s\n", ANSI_BOLD, ANSI_BRIGHT_GREEN, ANSI_RESET);
-        printf(" %sTarget : %s%s (%s)%s\n",
-               ANSI_BRIGHT_BLUE, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
-        
-        printf("%s", ANSI_BRIGHT_BLUE);
-        for (int i = 0; i < width; i++) printf("─");
-        printf("%s\n\n", ANSI_RESET);
+        /* CENTERED ACTION MODAL VIEW */
+        int card_w = 56;
+        if (card_w > cols - 4) card_w = cols - 4;
+        if (card_w < 40) card_w = 40;
+
+        int left_pad = (cols - card_w) / 2;
+        if (left_pad < 0) left_pad = 0;
+
+        int modal_rows = 12;
+        int top_pad = (rows - modal_rows - 3) / 2;
+        if (top_pad < 1) top_pad = 1;
+
+        for (int i = 0; i < top_pad; i++) printf("\n");
+
+        /* Print Top Card Border */
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s┌", ANSI_BRIGHT_BLUE);
+        for (int i = 0; i < card_w - 2; i++) printf("─");
+        printf("┐%s\n", ANSI_RESET);
+
+        /* Card Header Title */
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s│%s%s               SELECT COMMIT ACTION", ANSI_BRIGHT_BLUE, ANSI_BOLD, ANSI_BRIGHT_GREEN);
+        int p = card_w - 38;
+        for (int i = 0; i < p; i++) printf(" ");
+        printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+
+        /* Divider */
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s├", ANSI_BRIGHT_BLUE);
+        for (int i = 0; i < card_w - 2; i++) printf("─");
+        printf("┤%s\n", ANSI_RESET);
+
+        /* Target Commit Info */
+        char info_str[256];
+        snprintf(info_str, sizeof(info_str), "Target: %s (%.25s)", commits[selected].hash, commits[selected].subject);
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s│%s  %-*.*s%s│%s\n",
+               ANSI_BRIGHT_BLUE, ANSI_BOLD, card_w - 5, card_w - 5, info_str, ANSI_BRIGHT_BLUE, ANSI_RESET);
+
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s├", ANSI_BRIGHT_BLUE);
+        for (int i = 0; i < card_w - 2; i++) printf("─");
+        printf("┤%s\n", ANSI_RESET);
+
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s│%s", ANSI_BRIGHT_BLUE, ANSI_RESET);
+        for (int i = 0; i < card_w - 2; i++) printf(" ");
+        printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
 
         /* Option 0: Switch */
+        for (int i = 0; i < left_pad; i++) printf(" ");
         if (action_selected == 0) {
-            printf(" %s%s > Switch (git checkout)           %s\n", ANSI_BG_BLUE, ANSI_BOLD, ANSI_RESET);
+            char opt[256] = " > Switch (git checkout)";
+            printf("%s│%s  %s%-*.*s%s%s│%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BG_BLUE, card_w - 6, card_w - 6, opt, ANSI_RESET, ANSI_BRIGHT_BLUE, ANSI_RESET);
         } else {
-            printf(" %s   Switch (git checkout)%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+            char opt[256] = "   Switch (git checkout)";
+            printf("%s│%s  %s%-*.*s%s│%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, card_w - 6, card_w - 6, opt, ANSI_BRIGHT_BLUE, ANSI_RESET);
         }
 
         /* Option 1: Restauration */
+        for (int i = 0; i < left_pad; i++) printf(" ");
         if (action_selected == 1) {
-            printf(" %s%s > Restauration (git reset --hard)  %s\n", ANSI_BG_BLUE, ANSI_BOLD, ANSI_RESET);
+            char opt[256] = " > Restauration (git reset --hard)";
+            printf("%s│%s  %s%-*.*s%s%s│%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BG_BLUE, card_w - 6, card_w - 6, opt, ANSI_RESET, ANSI_BRIGHT_BLUE, ANSI_RESET);
         } else {
-            printf(" %s   Restauration (git reset --hard)%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+            char opt[256] = "   Restauration (git reset --hard)";
+            printf("%s│%s  %s%-*.*s%s│%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, card_w - 6, card_w - 6, opt, ANSI_BRIGHT_BLUE, ANSI_RESET);
         }
 
         /* Option 2: Cancel */
+        for (int i = 0; i < left_pad; i++) printf(" ");
         if (action_selected == 2) {
-            printf(" %s%s > Cancel                         %s\n", ANSI_BG_BLUE, ANSI_BOLD, ANSI_RESET);
+            char opt[256] = " > Cancel";
+            printf("%s│%s  %s%-*.*s%s%s│%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BG_BLUE, card_w - 6, card_w - 6, opt, ANSI_RESET, ANSI_BRIGHT_BLUE, ANSI_RESET);
         } else {
-            printf(" %s   Cancel%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+            char opt[256] = "   Cancel";
+            printf("%s│%s  %s%-*.*s%s│%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, card_w - 6, card_w - 6, opt, ANSI_BRIGHT_BLUE, ANSI_RESET);
         }
 
-        printf("\n%s", ANSI_BRIGHT_BLUE);
-        for (int i = 0; i < width; i++) printf("─");
-        printf("%s\n", ANSI_RESET);
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s│%s", ANSI_BRIGHT_BLUE, ANSI_RESET);
+        for (int i = 0; i < card_w - 2; i++) printf(" ");
+        printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+
+        for (int i = 0; i < left_pad; i++) printf(" ");
+        printf("%s└", ANSI_BRIGHT_BLUE);
+        for (int i = 0; i < card_w - 2; i++) printf("─");
+        printf("┘%s\n", ANSI_RESET);
+
+        int bottom_pad = rows - top_pad - 14;
+        for (int i = 0; i < bottom_pad; i++) printf("\n");
 
     } else {
         /* MAIN COMMIT LIST VIEW - Blue & Green Theme */
+        printf("\n %s%s=== MGIT TUI HISTORY INSPECTOR ===%s\n", ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_RESET);
+        
+        printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
+               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
+               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
+
+        int is_detached = (strcmp(branch, "HEAD") == 0 || strncmp(branch, "(HEAD detached", 14) == 0);
+
+        if (is_detached) {
+            printf(" | %sStatus:%s %sDetached HEAD%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        } else if (behind_count > 0) {
+            printf(" | %sStatus:%s %sPull Needed (%d behind)%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_YELLOW, behind_count, ANSI_RESET);
+        } else if (ahead_count > 0) {
+            printf(" | %sStatus:%s %sAhead (%d commits)%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_CYAN, ahead_count, ANSI_RESET);
+        } else {
+            printf(" | %sStatus:%s %sUp to date%s\n",
+                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
+        }
+
+        printf("%s", ANSI_BRIGHT_BLUE);
+        for (int i = 0; i < width; i++) printf("─");
+        printf("%s\n", ANSI_RESET);
+
         int hash_w = 7;
         int author_w = 11;
         int date_w = 14;
