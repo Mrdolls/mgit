@@ -5,7 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch, int rows, int cols) {
+static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch,
+                     const char *head_hash, int behind_count, int rows, int cols) {
     term_clear_screen();
 
     if (cols < 70) cols = 80;
@@ -13,15 +14,26 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     int hash_w = 7;
     int author_w = 12;
     int date_w = 16;
-    int subject_w = cols - (hash_w + author_w + date_w + 12);
+    int subject_w = cols - (hash_w + author_w + date_w + 16);
     if (subject_w < 20) subject_w = 20;
 
     printf("%s%s┌─────────────────────────────────────────────────────────────────────────────┐%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
     printf("%s%s│                      MGIT TUI HISTORY INSPECTOR                             │%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
     printf("%s%s└─────────────────────────────────────────────────────────────────────────────┘%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
-    printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s\n",
+    
+    /* Header Info */
+    printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
+
+    if (behind_count > 0) {
+        printf(" | %sStatus:%s %sPULL NEEDED (%d behind)%s\n",
+               ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_YELLOW, behind_count, ANSI_RESET);
+    } else {
+        printf(" | %sStatus:%s %sUp to date%s\n",
+               ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
+    }
+
     printf("%s───────────────────────────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
 
     int max_display = rows - 7;
@@ -36,27 +48,49 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     if (end_index > count) end_index = count;
 
     for (int i = start_index; i < end_index; i++) {
+        int is_head = (head_hash && strlen(head_hash) > 0 && strncmp(commits[i].hash, head_hash, strlen(commits[i].hash)) == 0);
+
         if (i == selected) {
-            printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s\n",
-                   ANSI_BG_CYAN, ANSI_BOLD,
-                   commits[i].hash, commits[i].author, commits[i].date,
-                   subject_w, commits[i].subject,
-                   ANSI_RESET);
+            /* Selected row in TUI */
+            if (is_head) {
+                printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s%s\n",
+                       ANSI_BG_CYAN, ANSI_BOLD,
+                       commits[i].hash, commits[i].author, commits[i].date,
+                       subject_w, commits[i].subject,
+                       MGIT_HEAD_BADGE, ANSI_RESET);
+            } else {
+                printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s\n",
+                       ANSI_BG_CYAN, ANSI_BOLD,
+                       commits[i].hash, commits[i].author, commits[i].date,
+                       subject_w, commits[i].subject,
+                       ANSI_RESET);
+            }
         } else {
-            printf("   %s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s%s\n",
-                   ANSI_BRIGHT_YELLOW, commits[i].hash, ANSI_RESET,
-                   ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
-                   ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
-                   ANSI_RESET, subject_w, commits[i].subject, ANSI_RESET);
+            /* Unselected row */
+            if (is_head) {
+                /* Current HEAD highlighted in GREEN */
+                printf("   %s%s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s %s\n",
+                       ANSI_BOLD, ANSI_BRIGHT_GREEN, commits[i].hash, ANSI_RESET,
+                       ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
+                       ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
+                       ANSI_RESET, subject_w, commits[i].subject, MGIT_HEAD_BADGE);
+            } else {
+                printf("   %s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s%s\n",
+                       ANSI_BRIGHT_YELLOW, commits[i].hash, ANSI_RESET,
+                       ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
+                       ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
+                       ANSI_RESET, subject_w, commits[i].subject, ANSI_RESET);
+            }
         }
     }
 
     printf("%s───────────────────────────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
-    printf("%s[UP/DOWN]%s Navigate  %s[S]%s Switch (checkout)  %s[R]%s Restauration (reset --hard)  %s[Q]%s Quit\n",
+    printf("%s[UP/DOWN]%s Navigate  %s[S]%s Switch  %s[P]%s Pull  %s[R]%s Restauration  %s[Q]%s Quit\n",
            ANSI_BRIGHT_CYAN, ANSI_RESET,
            ANSI_BRIGHT_GREEN, ANSI_RESET,
+           ANSI_BRIGHT_YELLOW, ANSI_RESET,
            ANSI_BRIGHT_RED, ANSI_RESET,
-           ANSI_BRIGHT_YELLOW, ANSI_RESET);
+           ANSI_BRIGHT_MAGENTA, ANSI_RESET);
     fflush(stdout);
 }
 
@@ -71,6 +105,12 @@ int cmd_show(int argc, char **argv) {
 
     char branch[128] = "HEAD";
     git_get_current_branch(branch, sizeof(branch));
+
+    char head_hash[64] = "";
+    git_get_head_hash(head_hash, sizeof(head_hash));
+
+    int behind_count = 0, ahead_count = 0;
+    git_check_pull_status(&behind_count, &ahead_count);
 
     CommitInfo *commits = NULL;
     int count = 0;
@@ -90,7 +130,7 @@ int cmd_show(int argc, char **argv) {
         int rows = 24, cols = 80;
         term_get_size(&rows, &cols);
 
-        draw_tui(commits, count, selected, branch, rows, cols);
+        draw_tui(commits, count, selected, branch, head_hash, behind_count, rows, cols);
 
         KeyCode key = term_read_key();
 
@@ -107,6 +147,28 @@ int cmd_show(int argc, char **argv) {
             case KEY_ESC:
                 running = 0;
                 break;
+
+            case KEY_PULL: {
+                term_disable_raw_mode();
+                term_clear_screen();
+                printf("\n%s %sPULL FROM REMOTE (git pull)%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
+                git_pull_quiet(branch);
+
+                printf("\nPress ENTER to return to TUI...");
+                fflush(stdout);
+                getchar();
+
+                /* Refresh history, head hash, and pull status */
+                git_free_history(commits, count);
+                git_get_current_branch(branch, sizeof(branch));
+                git_get_head_hash(head_hash, sizeof(head_hash));
+                git_check_pull_status(&behind_count, &ahead_count);
+                git_get_history(&commits, &count);
+                if (selected >= count && count > 0) selected = count - 1;
+
+                term_enable_raw_mode();
+                break;
+            }
 
             case KEY_SWITCH: {
                 term_disable_raw_mode();
@@ -130,6 +192,8 @@ int cmd_show(int argc, char **argv) {
                 /* Refresh history */
                 git_free_history(commits, count);
                 git_get_current_branch(branch, sizeof(branch));
+                git_get_head_hash(head_hash, sizeof(head_hash));
+                git_check_pull_status(&behind_count, &ahead_count);
                 git_get_history(&commits, &count);
                 if (selected >= count && count > 0) selected = count - 1;
 
@@ -165,6 +229,8 @@ int cmd_show(int argc, char **argv) {
                 /* Refresh history */
                 git_free_history(commits, count);
                 git_get_current_branch(branch, sizeof(branch));
+                git_get_head_hash(head_hash, sizeof(head_hash));
+                git_check_pull_status(&behind_count, &ahead_count);
                 git_get_history(&commits, &count);
                 if (selected >= count && count > 0) selected = count - 1;
 

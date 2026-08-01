@@ -76,6 +76,49 @@ int git_get_current_branch(char *buf, size_t size) {
     return 0;
 }
 
+int git_get_head_hash(char *buf, size_t size) {
+#ifdef _WIN32
+    FILE *fp = popen("git rev-parse --short HEAD 2>nul", "r");
+#else
+    FILE *fp = popen("git rev-parse --short HEAD 2>/dev/null", "r");
+#endif
+    if (!fp) return 0;
+
+    if (fgets(buf, (int)size, fp) != NULL) {
+        buf[strcspn(buf, "\r\n")] = '\0';
+        pclose(fp);
+        return 1;
+    }
+    pclose(fp);
+    return 0;
+}
+
+int git_check_pull_status(int *behind_count, int *ahead_count) {
+    *behind_count = 0;
+    *ahead_count = 0;
+
+    /* Fetch latest remote refs quietly */
+#ifdef _WIN32
+    system("git fetch --quiet 2>nul");
+    FILE *fp = popen("git rev-list --left-right --count HEAD...@{u} 2>nul", "r");
+#else
+    system("git fetch --quiet 2>/dev/null");
+    FILE *fp = popen("git rev-list --left-right --count HEAD...@{u} 2>/dev/null", "r");
+#endif
+    if (!fp) return 0;
+
+    char buffer[128];
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        int ahead = 0, behind = 0;
+        if (sscanf(buffer, "%d\t%d", &ahead, &behind) == 2 || sscanf(buffer, "%d %d", &ahead, &behind) == 2) {
+            *ahead_count = ahead;
+            *behind_count = behind;
+        }
+    }
+    pclose(fp);
+    return 1;
+}
+
 int git_add_all(void) {
     printf("%s %sStaging files%s (%sgit add .%s)\n",
            MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
@@ -116,6 +159,20 @@ int git_push(const char *branch) {
 #else
         snprintf(cmd, sizeof(cmd), "git push --quiet > /dev/null 2>&1");
 #endif
+    }
+    return system(cmd);
+}
+
+int git_pull_quiet(const char *branch) {
+    char cmd[1024];
+    if (branch && strlen(branch) > 0) {
+        printf("%s %sPulling from remote%s (%sgit pull origin %s%s)\n",
+               MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, branch, ANSI_RESET);
+        snprintf(cmd, sizeof(cmd), "git pull origin %s", branch);
+    } else {
+        printf("%s %sPulling from remote%s (%sgit pull%s)\n",
+               MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
+        snprintf(cmd, sizeof(cmd), "git pull");
     }
     return system(cmd);
 }

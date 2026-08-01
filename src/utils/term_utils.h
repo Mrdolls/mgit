@@ -15,6 +15,7 @@ typedef enum {
     KEY_QUIT,
     KEY_SWITCH,
     KEY_RESTORE,
+    KEY_PULL,
     KEY_OTHER
 } KeyCode;
 
@@ -54,6 +55,7 @@ typedef enum {
 #define MGIT_SUCCESS_BADGE  "\033[1;92m[SUCCESS]\033[0m"
 #define MGIT_ERROR_BADGE    "\033[1;91m[ERROR]\033[0m"
 #define MGIT_INFO_BADGE     "\033[1;93m[INFO]\033[0m"
+#define MGIT_HEAD_BADGE     "\033[1;92m[HEAD]\033[0m"
 
 /* Functions */
 void term_init(void);

@@ -90,6 +90,7 @@ KeyCode term_read_key(void) {
     if (c == 'q' || c == 'Q') return KEY_QUIT;
     if (c == 's' || c == 'S') return KEY_SWITCH;
     if (c == 'r' || c == 'R') return KEY_RESTORE;
+    if (c == 'p' || c == 'P') return KEY_PULL;
     return KEY_OTHER;
 #else
     char c;
@@ -115,6 +116,7 @@ KeyCode term_read_key(void) {
     if (c == 'q' || c == 'Q') return KEY_QUIT;
     if (c == 's' || c == 'S') return KEY_SWITCH;
     if (c == 'r' || c == 'R') return KEY_RESTORE;
+    if (c == 'p' || c == 'P') return KEY_PULL;
 
     return KEY_OTHER;
 #endif
