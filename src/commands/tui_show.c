@@ -6,22 +6,31 @@
 #include <string.h>
 
 static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch,
-                     const char *head_hash, int behind_count, int ahead_count, int rows, int cols) {
+                     const char *head_hash, int behind_count, int ahead_count,
+                     int action_menu_open, int action_selected, int rows, int cols) {
     term_clear_screen();
 
     if (cols < 70) cols = 80;
 
-    int hash_w = 7;
-    int author_w = 12;
-    int date_w = 16;
-    int subject_w = cols - (hash_w + author_w + date_w + 16);
-    if (subject_w < 20) subject_w = 20;
+    int box_width = cols - 4;
+    if (box_width > 76) box_width = 76;
+    if (box_width < 45) box_width = 45;
 
-    printf("%s%s┌─────────────────────────────────────────────────────────────────────────────┐%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
-    printf("%s%s│                      MGIT TUI HISTORY INSPECTOR                             │%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
-    printf("%s%s└─────────────────────────────────────────────────────────────────────────────┘%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
-    
-    /* Header Info */
+    /* Top Header Box (Clean & Dynamic) */
+    printf(" ┌");
+    for (int i = 0; i < box_width - 2; i++) printf("─");
+    printf("┐\n");
+
+    printf(" │%s%s  MGIT TUI HISTORY INSPECTOR", ANSI_BOLD, ANSI_CYAN);
+    int pad = box_width - 32;
+    for (int i = 0; i < pad; i++) printf(" ");
+    printf("%s│\n", ANSI_RESET);
+
+    printf(" └");
+    for (int i = 0; i < box_width - 2; i++) printf("─");
+    printf("┘\n");
+
+    /* Status Line */
     printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
@@ -42,9 +51,19 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
     }
 
-    printf("%s───────────────────────────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+    printf(" ");
+    for (int i = 0; i < box_width; i++) printf("─");
+    printf("\n");
 
-    int max_display = rows - 7;
+    /* Calculate Column Widths */
+    int hash_w = 7;
+    int author_w = 12;
+    int date_w = 16;
+    int subject_w = box_width - (hash_w + author_w + date_w + 14);
+    if (subject_w < 15) subject_w = 15;
+
+    int max_display = rows - 8;
+    if (action_menu_open) max_display -= 6;
     if (max_display < 1) max_display = 1;
 
     int start_index = 0;
@@ -59,7 +78,7 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         int is_head = (head_hash && strlen(head_hash) > 0 && strncmp(commits[i].hash, head_hash, strlen(commits[i].hash)) == 0);
 
         if (i == selected) {
-            /* Selected row in TUI */
+            /* Selected Row */
             if (is_head) {
                 printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s%s\n",
                        ANSI_BG_CYAN, ANSI_BOLD,
@@ -74,9 +93,8 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                        ANSI_RESET);
             }
         } else {
-            /* Unselected row */
+            /* Unselected Row */
             if (is_head) {
-                /* Current HEAD highlighted in GREEN */
                 printf("   %s%s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s %s\n",
                        ANSI_BOLD, ANSI_BRIGHT_GREEN, commits[i].hash, ANSI_RESET,
                        ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
@@ -92,13 +110,40 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         }
     }
 
-    printf("%s───────────────────────────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
-    printf("%s[UP/DOWN]%s Navigate  %s[S]%s Switch  %s[P]%s Pull  %s[R]%s Restauration  %s[Q]%s Quit\n",
-           ANSI_BRIGHT_CYAN, ANSI_RESET,
-           ANSI_BRIGHT_GREEN, ANSI_RESET,
-           ANSI_BRIGHT_YELLOW, ANSI_RESET,
-           ANSI_BRIGHT_RED, ANSI_RESET,
-           ANSI_BRIGHT_MAGENTA, ANSI_RESET);
+    printf(" ");
+    for (int i = 0; i < box_width; i++) printf("─");
+    printf("\n");
+
+    /* ACTION POPUP MODAL (When Enter is pressed) */
+    if (action_menu_open) {
+        printf(" %s┌────────────────────────────────────────────────────────┐%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        printf(" %s│ %sCOMMIT ACTIONS: %s%s (%.30s)%s", ANSI_BRIGHT_YELLOW, ANSI_BOLD, ANSI_BRIGHT_CYAN, commits[selected].hash, commits[selected].subject, ANSI_RESET);
+        printf("%s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        printf(" %s├────────────────────────────────────────────────────────┤%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        
+        if (action_selected == 0) {
+            printf(" %s│ %s > [1] Switch (git checkout)                             %s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_BG_CYAN, ANSI_RESET, ANSI_RESET);
+            printf(" %s│    [2] Restauration (git reset --hard)                      │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s│    [3] Cancel                                               │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        } else if (action_selected == 1) {
+            printf(" %s│    [1] Switch (git checkout)                                │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s│ %s > [2] Restauration (git reset --hard)                      %s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_BG_CYAN, ANSI_RESET, ANSI_RESET);
+            printf(" %s│    [3] Cancel                                               │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        } else {
+            printf(" %s│    [1] Switch (git checkout)                                │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s│    [2] Restauration (git reset --hard)                      │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s│ %s > [3] Cancel                                               %s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_BG_CYAN, ANSI_RESET, ANSI_RESET);
+        }
+        printf(" %s└────────────────────────────────────────────────────────┘%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        printf(" %s[UP/DOWN] Select Option  [ENTER] Confirm  [ESC] Cancel%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+    } else {
+        /* Clean Footer Help Bar */
+        printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Select Commit  %s[P]%s Pull Remote  %s[Q]%s Quit\n",
+               ANSI_BRIGHT_CYAN, ANSI_RESET,
+               ANSI_BRIGHT_GREEN, ANSI_RESET,
+               ANSI_BRIGHT_YELLOW, ANSI_RESET,
+               ANSI_BRIGHT_MAGENTA, ANSI_RESET);
+    }
     fflush(stdout);
 }
 
@@ -134,120 +179,157 @@ int cmd_show(int argc, char **argv) {
     int selected = 0;
     int running = 1;
 
+    int action_menu_open = 0;
+    int action_selected = 0;
+
     while (running) {
         int rows = 24, cols = 80;
         term_get_size(&rows, &cols);
 
-        draw_tui(commits, count, selected, branch, head_hash, behind_count, ahead_count, rows, cols);
+        draw_tui(commits, count, selected, branch, head_hash, behind_count, ahead_count,
+                 action_menu_open, action_selected, rows, cols);
 
         KeyCode key = term_read_key();
 
-        switch (key) {
-            case KEY_UP:
-                if (selected > 0) selected--;
-                break;
+        if (action_menu_open) {
+            /* Handling key input inside Action Menu Modal */
+            switch (key) {
+                case KEY_UP:
+                    if (action_selected > 0) action_selected--;
+                    break;
 
-            case KEY_DOWN:
-                if (selected < count - 1) selected++;
-                break;
+                case KEY_DOWN:
+                    if (action_selected < 2) action_selected++;
+                    break;
 
-            case KEY_QUIT:
-            case KEY_ESC:
-                running = 0;
-                break;
+                case KEY_ESC:
+                case KEY_QUIT:
+                    action_menu_open = 0;
+                    break;
 
-            case KEY_PULL: {
-                term_disable_raw_mode();
-                term_clear_screen();
-                printf("\n%s %sPULL FROM REMOTE (git pull)%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
-                git_pull_quiet(branch);
+                case KEY_ENTER: {
+                    if (action_selected == 0) {
+                        /* Action 1: Switch (checkout) */
+                        action_menu_open = 0;
+                        term_disable_raw_mode();
+                        term_clear_screen();
+                        printf("\n%s %sSWITCH COMMIT (git checkout)%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
+                        printf("%s Target Commit : %s%s (%s)%s\n", ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
+                        printf("\n%sAre you sure you want to checkout this commit? (y/N): %s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                        fflush(stdout);
 
-                printf("\nPress ENTER to return to TUI...");
-                fflush(stdout);
-                getchar();
+                        char response[16] = "";
+                        if (fgets(response, sizeof(response), stdin) && (response[0] == 'y' || response[0] == 'Y')) {
+                            printf("\n");
+                            git_checkout(commits[selected].hash);
+                        } else {
+                            printf("\n%sOperation cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+                        }
+                        printf("\nPress ENTER to return to TUI...");
+                        fflush(stdout);
+                        getchar();
 
-                /* Refresh history, head hash, and pull status */
-                git_free_history(commits, count);
-                git_get_current_branch(branch, sizeof(branch));
-                git_get_head_hash(head_hash, sizeof(head_hash));
-                git_check_pull_status(&behind_count, &ahead_count);
-                git_get_history(&commits, &count);
-                if (selected >= count && count > 0) selected = count - 1;
+                        /* Refresh history */
+                        git_free_history(commits, count);
+                        git_get_current_branch(branch, sizeof(branch));
+                        git_get_head_hash(head_hash, sizeof(head_hash));
+                        git_check_pull_status(&behind_count, &ahead_count);
+                        git_get_history(&commits, &count);
+                        if (selected >= count && count > 0) selected = count - 1;
 
-                term_enable_raw_mode();
-                break;
-            }
+                        term_enable_raw_mode();
+                    } else if (action_selected == 1) {
+                        /* Action 2: Restauration (reset --hard) */
+                        action_menu_open = 0;
+                        term_disable_raw_mode();
+                        term_clear_screen();
+                        printf("\n%s %sRESTAURATION (git reset --hard)%s\n", MGIT_ERROR_BADGE, ANSI_BOLD, ANSI_RESET);
+                        printf("%sThis operation will PERMANENTLY ERASE all uncommitted changes!%s\n\n", ANSI_BRIGHT_RED, ANSI_RESET);
+                        printf("%s Target Commit : %s%s (%s)%s\n", ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
+                        printf("\n%sAre you absolutely sure you want to proceed? (type 'yes' to confirm): %s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                        fflush(stdout);
 
-            case KEY_SWITCH: {
-                term_disable_raw_mode();
-                term_clear_screen();
-                printf("\n%s %sSWITCH COMMIT (git checkout)%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
-                printf("%s Target Commit : %s%s (%s)%s\n", ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
-                printf("\n%sAre you sure you want to checkout this commit? (y/N): %s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-                fflush(stdout);
+                        char response[16] = "";
+                        if (fgets(response, sizeof(response), stdin)) {
+                            response[strcspn(response, "\r\n")] = '\0';
+                            if (strcmp(response, "yes") == 0 || strcmp(response, "y") == 0 || strcmp(response, "Y") == 0) {
+                                printf("\n");
+                                git_reset_hard(commits[selected].hash);
+                            } else {
+                                printf("\n%sRestauration cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+                            }
+                        } else {
+                            printf("\n%sRestauration cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+                        }
+                        printf("\nPress ENTER to return to TUI...");
+                        fflush(stdout);
+                        getchar();
 
-                char response[16] = "";
-                if (fgets(response, sizeof(response), stdin) && (response[0] == 'y' || response[0] == 'Y')) {
-                    printf("\n");
-                    git_checkout(commits[selected].hash);
-                } else {
-                    printf("\n%sOperation cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
-                }
-                printf("\nPress ENTER to return to TUI...");
-                fflush(stdout);
-                getchar();
+                        /* Refresh history */
+                        git_free_history(commits, count);
+                        git_get_current_branch(branch, sizeof(branch));
+                        git_get_head_hash(head_hash, sizeof(head_hash));
+                        git_check_pull_status(&behind_count, &ahead_count);
+                        git_get_history(&commits, &count);
+                        if (selected >= count && count > 0) selected = count - 1;
 
-                /* Refresh history */
-                git_free_history(commits, count);
-                git_get_current_branch(branch, sizeof(branch));
-                git_get_head_hash(head_hash, sizeof(head_hash));
-                git_check_pull_status(&behind_count, &ahead_count);
-                git_get_history(&commits, &count);
-                if (selected >= count && count > 0) selected = count - 1;
-
-                term_enable_raw_mode();
-                break;
-            }
-
-            case KEY_RESTORE: {
-                term_disable_raw_mode();
-                term_clear_screen();
-                printf("\n%s %sRESTAURATION (git reset --hard)%s\n", MGIT_ERROR_BADGE, ANSI_BOLD, ANSI_RESET);
-                printf("%sThis operation will PERMANENTLY ERASE all uncommitted changes!%s\n\n", ANSI_BRIGHT_RED, ANSI_RESET);
-                printf("%s Target Commit : %s%s (%s)%s\n", ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
-                printf("\n%sAre you absolutely sure you want to proceed? (type 'yes' to confirm): %s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-                fflush(stdout);
-
-                char response[16] = "";
-                if (fgets(response, sizeof(response), stdin)) {
-                    response[strcspn(response, "\r\n")] = '\0';
-                    if (strcmp(response, "yes") == 0 || strcmp(response, "y") == 0 || strcmp(response, "Y") == 0) {
-                        printf("\n");
-                        git_reset_hard(commits[selected].hash);
+                        term_enable_raw_mode();
                     } else {
-                        printf("\n%sRestauration cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+                        /* Action 3: Cancel */
+                        action_menu_open = 0;
                     }
-                } else {
-                    printf("\n%sRestauration cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+                    break;
                 }
-                printf("\nPress ENTER to return to TUI...");
-                fflush(stdout);
-                getchar();
 
-                /* Refresh history */
-                git_free_history(commits, count);
-                git_get_current_branch(branch, sizeof(branch));
-                git_get_head_hash(head_hash, sizeof(head_hash));
-                git_check_pull_status(&behind_count, &ahead_count);
-                git_get_history(&commits, &count);
-                if (selected >= count && count > 0) selected = count - 1;
-
-                term_enable_raw_mode();
-                break;
+                default:
+                    break;
             }
+        } else {
+            /* Main TUI List Navigation */
+            switch (key) {
+                case KEY_UP:
+                    if (selected > 0) selected--;
+                    break;
 
-            default:
-                break;
+                case KEY_DOWN:
+                    if (selected < count - 1) selected++;
+                    break;
+
+                case KEY_ENTER:
+                    action_menu_open = 1;
+                    action_selected = 0;
+                    break;
+
+                case KEY_QUIT:
+                case KEY_ESC:
+                    running = 0;
+                    break;
+
+                case KEY_PULL: {
+                    term_disable_raw_mode();
+                    term_clear_screen();
+                    printf("\n%s %sPULL FROM REMOTE (git pull)%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
+                    git_pull_quiet(branch);
+
+                    printf("\nPress ENTER to return to TUI...");
+                    fflush(stdout);
+                    getchar();
+
+                    /* Refresh history, head hash, and pull status */
+                    git_free_history(commits, count);
+                    git_get_current_branch(branch, sizeof(branch));
+                    git_get_head_hash(head_hash, sizeof(head_hash));
+                    git_check_pull_status(&behind_count, &ahead_count);
+                    git_get_history(&commits, &count);
+                    if (selected >= count && count > 0) selected = count - 1;
+
+                    term_enable_raw_mode();
+                    break;
+                }
+
+                default:
+                    break;
+            }
         }
     }
 
