@@ -18,7 +18,7 @@ int cmd_uninstall(int argc, char **argv) {
 
         /* Remove binary folder ~/.mgit */
         snprintf(path, sizeof(path), "%s/.mgit", home);
-        char cmd[1024];
+        char cmd[2048];
 #ifdef _WIN32
         snprintf(cmd, sizeof(cmd), "rmdir /s /q \"%s\" 2>NUL", path);
 #else
