@@ -9,25 +9,36 @@
 
 #define MGIT_VERSION "0.1.0"
 
+static int is_repo_url(const char *str) {
+    if (!str) return 0;
+    if (strncmp(str, "git@", 4) == 0) return 1;
+    if (strncmp(str, "http://", 7) == 0) return 1;
+    if (strncmp(str, "https://", 8) == 0) return 1;
+    if (strstr(str, ".git") != NULL) return 1;
+    if (strstr(str, "github.com") != NULL) return 1;
+    return 0;
+}
+
 static void print_usage(void) {
     printf("\n%s %sLightweight Git Workflow Automation CLI (v%s)%s\n\n",
            MGIT_BADGE, ANSI_BOLD, MGIT_VERSION, ANSI_RESET);
     printf("%sUSAGE:%s\n", ANSI_BOLD, ANSI_RESET);
+    printf("  %smgit%s %s<url>%s %s[folder]%s            Clone a remote repository directly\n", ANSI_BRIGHT_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_BLACK, ANSI_RESET);
     printf("  %smgit%s %s<command>%s %s[options]%s\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_BLACK, ANSI_RESET);
     printf("%sAVAILABLE COMMANDS:%s\n", ANSI_BOLD, ANSI_RESET);
     printf("  %spush [message]%s          Automate git add ., git commit -m [message] and git push\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("                            %s(Default commit message: \"Auto push\")%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
     printf("  %sshow%s                    Open interactive TUI history viewer with Switch & Restauration\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
-    printf("  %sclone <url> [name]%s       Clone a remote Git repository with automated feedback\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %s<url> [name]%s             Clone a remote Git repository directly\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("  %supdate%s                  Download and apply the latest version from GitHub\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("  %suninstall%s               Cleanly uninstall mgit and remove shell configuration\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("  %shelp%s                    Show this help message\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("  %sversion%s                 Show version information\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("%sEXAMPLES:%s\n", ANSI_BOLD, ANSI_RESET);
+    printf("  %smgit git@github.com:Mrdolls/mgit.git%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("  %smgit git@github.com:Mrdolls/mgit.git my_folder%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
     printf("  %smgit push \"Fix user authentication bug\"%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
-    printf("  %smgit clone git@github.com:Mrdolls/mgit.git my_project%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
-    printf("  %smgit show%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
-    printf("  %smgit update%s\n\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("  %smgit show%s\n\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
 }
 
 int main(int argc, char **argv) {
@@ -40,7 +51,9 @@ int main(int argc, char **argv) {
 
     const char *subcmd = argv[1];
 
-    if (strcmp(subcmd, "push") == 0) {
+    if (is_repo_url(subcmd)) {
+        return cmd_clone(argc - 1, argv + 1);
+    } else if (strcmp(subcmd, "push") == 0) {
         return cmd_push(argc - 2, argv + 2);
     } else if (strcmp(subcmd, "show") == 0) {
         return cmd_show(argc - 2, argv + 2);
