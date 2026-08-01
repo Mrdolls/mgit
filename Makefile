@@ -7,6 +7,7 @@ SRCS = src/main.c \
        src/utils/git_utils.c \
        src/commands/push.c \
        src/commands/tui_show.c \
+       src/commands/clone.c \
        src/commands/update.c \
        src/commands/uninstall.c
 

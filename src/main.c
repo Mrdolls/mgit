@@ -3,6 +3,7 @@
 #include "utils/term_utils.h"
 #include "commands/push.h"
 #include "commands/tui_show.h"
+#include "commands/clone.h"
 #include "commands/update.h"
 #include "commands/uninstall.h"
 
@@ -14,15 +15,17 @@ static void print_usage(void) {
     printf("%sUSAGE:%s\n", ANSI_BOLD, ANSI_RESET);
     printf("  %smgit%s %s<command>%s %s[options]%s\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_BLACK, ANSI_RESET);
     printf("%sAVAILABLE COMMANDS:%s\n", ANSI_BOLD, ANSI_RESET);
-    printf("  %spush [message]%s   Automate git add ., git commit -m [message] and git push\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
-    printf("                     %s(Default commit message: \"Auto push\")%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
-    printf("  %sshow%s             Open interactive TUI history viewer with Switch & Restauration\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
-    printf("  %supdate%s           Download and apply the latest version from GitHub\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
-    printf("  %suninstall%s        Cleanly uninstall mgit and remove shell configuration\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
-    printf("  %shelp%s             Show this help message\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
-    printf("  %sversion%s          Show version information\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %spush [message]%s          Automate git add ., git commit -m [message] and git push\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("                            %s(Default commit message: \"Auto push\")%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+    printf("  %sshow%s                    Open interactive TUI history viewer with Switch & Restauration\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %sclone <url> [name]%s       Clone a remote Git repository with automated feedback\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %supdate%s                  Download and apply the latest version from GitHub\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %suninstall%s               Cleanly uninstall mgit and remove shell configuration\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %shelp%s                    Show this help message\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
+    printf("  %sversion%s                 Show version information\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("%sEXAMPLES:%s\n", ANSI_BOLD, ANSI_RESET);
     printf("  %smgit push \"Fix user authentication bug\"%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("  %smgit clone git@github.com:Mrdolls/mgit.git my_project%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
     printf("  %smgit show%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
     printf("  %smgit update%s\n\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
 }
@@ -41,6 +44,8 @@ int main(int argc, char **argv) {
         return cmd_push(argc - 2, argv + 2);
     } else if (strcmp(subcmd, "show") == 0) {
         return cmd_show(argc - 2, argv + 2);
+    } else if (strcmp(subcmd, "clone") == 0) {
+        return cmd_clone(argc - 2, argv + 2);
     } else if (strcmp(subcmd, "update") == 0) {
         return cmd_update(argc - 2, argv + 2);
     } else if (strcmp(subcmd, "uninstall") == 0) {

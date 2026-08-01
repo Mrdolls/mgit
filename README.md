@@ -8,6 +8,7 @@
 
 - **`mgit push [msg]`**: Automates `git add .`, `git commit -m "[msg]"` (default message: `"Auto push"`), and `git push` on your active branch.
 - **`mgit show`**: Launches an interactive TUI history inspector. Allows navigating commits, inspecting metadata, performing a `Switch` (`git checkout`), or executing a `Restauration` (`git reset --hard`).
+- **`mgit clone <url> [name]`**: Clones a remote repository directly with step-by-step feedback.
 - **`mgit update`**: Automatically fetches and builds the latest release from GitHub.
 - **`mgit uninstall`**: Cleanly removes the executable and cleans up configuration entries in `.bashrc` and `.zshrc`.
 
@@ -41,6 +42,15 @@ mgit push
 
 # Push with custom commit message
 mgit push "Refactor user authentication module"
+```
+
+### Clone a Repository
+```bash
+# Clone a repository
+mgit clone git@github.com:Mrdolls/mgit.git
+
+# Clone into a custom directory name
+mgit clone git@github.com:Mrdolls/mgit.git my_custom_dir
 ```
 
 ### Interactive TUI Inspector
