@@ -156,25 +156,84 @@ int git_pull_quiet(const char *branch) {
         return system(cmd);
     }
 
-    /* Detached HEAD fallback: auto-detect default branch (master/main) and pull */
-    char default_branch[64] = "master";
+    /* Detached HEAD fallback: smart detection of default local/remote branch */
+    char default_branch[64] = "";
+
 #ifdef _WIN32
-    if (system("git rev-parse --verify main > nul 2>&1") == 0) {
-        strcpy(default_branch, "main");
-    }
+    FILE *fp = popen("git branch --list master 2>nul", "r");
 #else
-    if (system("git rev-parse --verify main > /dev/null 2>&1") == 0) {
-        strcpy(default_branch, "main");
-    }
+    FILE *fp = popen("git branch --list master 2>/dev/null", "r");
 #endif
+    if (fp) {
+        char buf[128] = "";
+        if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
+            strcpy(default_branch, "master");
+        }
+        pclose(fp);
+    }
+
+    if (strlen(default_branch) == 0) {
+#ifdef _WIN32
+        fp = popen("git branch --list main 2>nul", "r");
+#else
+        fp = popen("git branch --list main 2>/dev/null", "r");
+#endif
+        if (fp) {
+            char buf[128] = "";
+            if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
+                strcpy(default_branch, "main");
+            }
+            pclose(fp);
+        }
+    }
+
+    if (strlen(default_branch) == 0) {
+#ifdef _WIN32
+        fp = popen("git branch -r --list origin/master 2>nul", "r");
+#else
+        fp = popen("git branch -r --list origin/master 2>/dev/null", "r");
+#endif
+        if (fp) {
+            char buf[128] = "";
+            if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
+                strcpy(default_branch, "master");
+            }
+            pclose(fp);
+        }
+    }
+
+    if (strlen(default_branch) == 0) {
+#ifdef _WIN32
+        fp = popen("git branch -r --list origin/main 2>nul", "r");
+#else
+        fp = popen("git branch -r --list origin/main 2>/dev/null", "r");
+#endif
+        if (fp) {
+            char buf[128] = "";
+            if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
+                strcpy(default_branch, "main");
+            }
+            pclose(fp);
+        }
+    }
+
+    if (strlen(default_branch) == 0) {
+        strcpy(default_branch, "master");
+    }
 
     printf("%s %sReconnecting to branch '%s' and pulling latest updates...%s\n",
            MGIT_BADGE, ANSI_BOLD, default_branch, ANSI_RESET);
 
 #ifdef _WIN32
-    snprintf(cmd, sizeof(cmd), "git checkout %s && git pull origin %s", default_branch, default_branch);
+    snprintf(cmd, sizeof(cmd), "git checkout %s 2>nul || git checkout -b %s origin/%s 2>nul",
+             default_branch, default_branch, default_branch);
+    system(cmd);
+    snprintf(cmd, sizeof(cmd), "git pull origin %s", default_branch);
 #else
-    snprintf(cmd, sizeof(cmd), "git checkout %s && git pull origin %s", default_branch, default_branch);
+    snprintf(cmd, sizeof(cmd), "git checkout %s 2>/dev/null || git checkout -b %s origin/%s 2>/dev/null",
+             default_branch, default_branch, default_branch);
+    system(cmd);
+    snprintf(cmd, sizeof(cmd), "git pull origin %s", default_branch);
 #endif
 
     return system(cmd);
