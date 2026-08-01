@@ -50,7 +50,7 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         int left_pad = (cols - card_w) / 2;
         if (left_pad < 0) left_pad = 0;
 
-        int modal_rows = 11;
+        int modal_rows = 12;
         int top_pad = (rows - modal_rows - 3) / 2;
         if (top_pad < 1) top_pad = 1;
 
@@ -71,10 +71,15 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┤%s\n", ANSI_RESET);
 
-        /* Row 3: Target Commit Info */
-        char info_str[256];
-        snprintf(info_str, sizeof(info_str), "Target: %s (%.25s)", commits[selected].hash, commits[selected].subject);
-        print_modal_row(left_pad, "  ", info_str, card_w, 0, 1);
+        /* Row 3a: DESC */
+        char desc_str[256];
+        snprintf(desc_str, sizeof(desc_str), "DESC: %.38s", commits[selected].subject);
+        print_modal_row(left_pad, "  ", desc_str, card_w, 0, 1);
+
+        /* Row 3b: ID */
+        char id_str[256];
+        snprintf(id_str, sizeof(id_str), "ID  : %s", commits[selected].hash);
+        print_modal_row(left_pad, "  ", id_str, card_w, 0, 1);
 
         /* Row 4: Divider */
         for (int i = 0; i < left_pad; i++) printf(" ");
@@ -103,7 +108,7 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┘%s\n", ANSI_RESET);
 
-        int bottom_pad = rows - top_pad - 13;
+        int bottom_pad = rows - top_pad - 14;
         for (int i = 0; i < bottom_pad; i++) printf("\n");
 
     } else {
