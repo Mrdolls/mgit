@@ -1,24 +1,15 @@
-#ifdef _WIN32
-#include <stdio.h>
-#define popen _popen
-#define pclose _pclose
-#else
-#define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
-#endif
-
 #include "git_utils.h"
 #include "term_utils.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 int git_is_repository(void) {
 #ifdef _WIN32
-    int ret = system("git rev-parse --is-inside-work-tree > nul 2>&1");
+    return (system("git rev-parse --is-inside-work-tree > nul 2>&1") == 0);
 #else
-    int ret = system("git rev-parse --is-inside-work-tree > /dev/null 2>&1");
+    return (system("git rev-parse --is-inside-work-tree > /dev/null 2>&1") == 0);
 #endif
-    return (ret == 0);
 }
 
 int git_has_changes(void) {
@@ -28,15 +19,11 @@ int git_has_changes(void) {
     FILE *fp = popen("git status --porcelain 2>/dev/null", "r");
 #endif
     if (!fp) return 0;
-    char buffer[512];
-    int has_changes = 0;
-    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        if (strlen(buffer) > 0) {
-            has_changes = 1;
-            break;
-        }
-    }
+
+    char buffer[256];
+    int has_changes = (fgets(buffer, sizeof(buffer), fp) != NULL);
     pclose(fp);
+
     return has_changes;
 }
 
@@ -47,16 +34,12 @@ int git_has_unpushed_commits(void) {
     FILE *fp = popen("git log @{u}..HEAD --oneline 2>/dev/null", "r");
 #endif
     if (!fp) return 0;
-    char buffer[512];
-    int unpushed = 0;
-    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        if (strlen(buffer) > 0) {
-            unpushed = 1;
-            break;
-        }
-    }
+
+    char buffer[256];
+    int has_unpushed = (fgets(buffer, sizeof(buffer), fp) != NULL);
     pclose(fp);
-    return unpushed;
+
+    return has_unpushed;
 }
 
 int git_get_current_branch(char *buf, size_t size) {
@@ -73,6 +56,9 @@ int git_get_current_branch(char *buf, size_t size) {
         return 1;
     }
     pclose(fp);
+
+    strncpy(buf, "HEAD", size);
+    buf[size - 1] = '\0';
     return 0;
 }
 
@@ -194,40 +180,44 @@ int git_get_history(CommitInfo **commits_out, int *count_out) {
     *commits_out = NULL;
     *count_out = 0;
 
-    FILE *fp = popen("git log --all -n 50 --pretty=format:\"%h|%an|%ar|%s\"", "r");
+    FILE *fp = popen("git log --all -n 50 --pretty=format:\"%h|%an|%ar (%cd)|%s\" --date=format:\"%d/%m/%Y\"", "r");
     if (!fp) return 0;
 
     int capacity = 50;
-    CommitInfo *commits = malloc(capacity * sizeof(CommitInfo));
+    CommitInfo *commits = malloc(sizeof(CommitInfo) * capacity);
     if (!commits) {
         pclose(fp);
         return 0;
     }
 
-    char line[512];
     int count = 0;
+    char line[512];
 
-    while (fgets(line, sizeof(line), fp) != NULL && count < capacity) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
         line[strcspn(line, "\r\n")] = '\0';
         if (strlen(line) == 0) continue;
 
-        char *token = strtok(line, "|");
-        if (token) strncpy(commits[count].hash, token, sizeof(commits[count].hash) - 1);
-        else commits[count].hash[0] = '\0';
+        char *token_hash = strtok(line, "|");
+        char *token_author = strtok(NULL, "|");
+        char *token_date = strtok(NULL, "|");
+        char *token_subject = strtok(NULL, "|");
 
-        token = strtok(NULL, "|");
-        if (token) strncpy(commits[count].author, token, sizeof(commits[count].author) - 1);
-        else commits[count].author[0] = '\0';
+        if (token_hash && token_author && token_date && token_subject) {
+            strncpy(commits[count].hash, token_hash, sizeof(commits[count].hash) - 1);
+            commits[count].hash[sizeof(commits[count].hash) - 1] = '\0';
 
-        token = strtok(NULL, "|");
-        if (token) strncpy(commits[count].date, token, sizeof(commits[count].date) - 1);
-        else commits[count].date[0] = '\0';
+            strncpy(commits[count].author, token_author, sizeof(commits[count].author) - 1);
+            commits[count].author[sizeof(commits[count].author) - 1] = '\0';
 
-        token = strtok(NULL, "|");
-        if (token) strncpy(commits[count].subject, token, sizeof(commits[count].subject) - 1);
-        else commits[count].subject[0] = '\0';
+            strncpy(commits[count].date, token_date, sizeof(commits[count].date) - 1);
+            commits[count].date[sizeof(commits[count].date) - 1] = '\0';
 
-        count++;
+            strncpy(commits[count].subject, token_subject, sizeof(commits[count].subject) - 1);
+            commits[count].subject[sizeof(commits[count].subject) - 1] = '\0';
+
+            count++;
+            if (count >= capacity) break;
+        }
     }
 
     pclose(fp);
@@ -238,5 +228,7 @@ int git_get_history(CommitInfo **commits_out, int *count_out) {
 
 void git_free_history(CommitInfo *commits, int count) {
     (void)count;
-    if (commits) free(commits);
+    if (commits) {
+        free(commits);
+    }
 }
