@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=gnu99 -I.
-TARGET = mg
+TARGET = mgit
 
 SRCS = src/main.c \
        src/utils/term_utils.c \
@@ -21,7 +21,6 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-# Portable clean command
 	rm -f $(OBJS) $(TARGET) $(TARGET).exe 2>/dev/null || del /f /q src\*.o src\utils\*.o src\commands\*.o $(TARGET).exe 2>NUL || true
 
 install: $(TARGET)

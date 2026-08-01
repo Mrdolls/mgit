@@ -19,7 +19,7 @@ ERROR_BADGE="\033[1;91m[ERROR]\033[0m"
 
 INSTALL_DIR="$HOME/.mgit"
 BIN_DIR="$INSTALL_DIR/bin"
-TARGET_BIN="$BIN_DIR/mg"
+TARGET_BIN="$BIN_DIR/mgit"
 
 echo ""
 echo -e "${CYAN}┌──────────────────────────────────────────────────────────┐${RESET}"
@@ -36,14 +36,14 @@ if [ -f "Makefile" ]; then
     echo -e "${STEP_PREFIX} Compiling binary from local source..."
     make clean > /dev/null 2>&1 || true
     make > /dev/null 2>&1
-    cp mg* "$BIN_DIR/"
+    cp mgit* "$BIN_DIR/"
 else
     echo -e "${STEP_PREFIX} Fetching and building latest release..."
     TMP_DIR=$(mktemp -d)
     git clone --quiet https://github.com/Mrdolls/mgit.git "$TMP_DIR/mgit" > /dev/null 2>&1
     cd "$TMP_DIR/mgit"
     make > /dev/null 2>&1
-    cp mg* "$BIN_DIR/"
+    cp mgit* "$BIN_DIR/"
     rm -rf "$TMP_DIR"
 fi
 
@@ -58,7 +58,8 @@ for CONFIG in "${SHELL_CONFIGS[@]}"; do
         echo "" >> "$CONFIG"
         echo "# mgit CLI configuration" >> "$CONFIG"
         echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$CONFIG"
-        echo "alias mg=\"$BIN_DIR/mg\"" >> "$CONFIG"
+        echo "alias mgit=\"$BIN_DIR/mgit\"" >> "$CONFIG"
+        echo "alias mg=\"$BIN_DIR/mgit\"" >> "$CONFIG"
         UPDATED_SHELLS="$UPDATED_SHELLS $(basename "$CONFIG")"
     fi
 done
@@ -73,8 +74,8 @@ if [ -n "$UPDATED_SHELLS" ]; then
     echo -e "  ${BOLD}Shell Profiles${RESET}  :${GRAY}${UPDATED_SHELLS}${RESET}"
 fi
 echo ""
-echo -e "  ${BOLD}Quick Start${RESET}     : ${GREEN}mg help${RESET}"
-echo -e "  ${BOLD}Uninstallation${RESET}  : ${YELLOW}mg uninstall${RESET} ${GRAY}(or remove ${BIN_DIR})${RESET}"
+echo -e "  ${BOLD}Quick Start${RESET}     : ${GREEN}mgit help${RESET}"
+echo -e "  ${BOLD}Uninstallation${RESET}  : ${YELLOW}mgit uninstall${RESET} ${GRAY}(or remove ${BIN_DIR})${RESET}"
 echo -e "${GRAY}────────────────────────────────────────────────────────────${RESET}"
 echo -e " ${DIM}Note: Run 'source ~/.zshrc' (or source ~/.bashrc) to refresh.${RESET}"
 echo ""

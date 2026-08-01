@@ -12,7 +12,7 @@ static void print_usage(void) {
     printf("\n%s %sLightweight Git Workflow Automation CLI (v%s)%s\n\n",
            MGIT_BADGE, ANSI_BOLD, MGIT_VERSION, ANSI_RESET);
     printf("%sUSAGE:%s\n", ANSI_BOLD, ANSI_RESET);
-    printf("  %smg%s %s<command>%s %s[options]%s\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_BLACK, ANSI_RESET);
+    printf("  %smgit%s %s<command>%s %s[options]%s\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_BLACK, ANSI_RESET);
     printf("%sAVAILABLE COMMANDS:%s\n", ANSI_BOLD, ANSI_RESET);
     printf("  %spush [message]%s   Automate git add ., git commit -m [message] and git push\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("                     %s(Default commit message: \"Auto push\")%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
@@ -22,9 +22,9 @@ static void print_usage(void) {
     printf("  %shelp%s             Show this help message\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("  %sversion%s          Show version information\n\n", ANSI_BRIGHT_CYAN, ANSI_RESET);
     printf("%sEXAMPLES:%s\n", ANSI_BOLD, ANSI_RESET);
-    printf("  %smg push \"Fix user authentication bug\"%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
-    printf("  %smg show%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
-    printf("  %smg update%s\n\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("  %smgit push \"Fix user authentication bug\"%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("  %smgit show%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("  %smgit update%s\n\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
 }
 
 int main(int argc, char **argv) {

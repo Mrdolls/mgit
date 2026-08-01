@@ -1,15 +1,15 @@
 # mgit
 
-**mgit** (`mg`) is a lightweight C-based CLI tool with an interactive TUI (Terminal User Interface) designed to automate and streamline daily Git workflows.
+**mgit** is a lightweight C-based CLI tool with an interactive TUI (Terminal User Interface) designed to automate and streamline daily Git workflows.
 
 ---
 
 ## Features
 
-- **`mg push [msg]`**: Automates `git add .`, `git commit -m "[msg]"` (default message: `"Auto push"`), and `git push` on your active branch.
-- **`mg show`**: Launches an interactive TUI history inspector. Allows navigating commits, inspecting metadata, performing a `Switch` (`git checkout`), or executing a `Restauration` (`git reset --hard`).
-- **`mg update`**: Automatically fetches and builds the latest release from GitHub.
-- **`mg uninstall`**: Cleanly removes the executable and cleans up configuration entries in `.bashrc` and `.zshrc`.
+- **`mgit push [msg]`**: Automates `git add .`, `git commit -m "[msg]"` (default message: `"Auto push"`), and `git push` on your active branch.
+- **`mgit show`**: Launches an interactive TUI history inspector. Allows navigating commits, inspecting metadata, performing a `Switch` (`git checkout`), or executing a `Restauration` (`git reset --hard`).
+- **`mgit update`**: Automatically fetches and builds the latest release from GitHub.
+- **`mgit uninstall`**: Cleanly removes the executable and cleans up configuration entries in `.bashrc` and `.zshrc`.
 
 ---
 
@@ -37,15 +37,15 @@ make install
 ### Automate Git Push
 ```bash
 # Push with default commit message "Auto push"
-mg push
+mgit push
 
 # Push with custom commit message
-mg push "Refactor user authentication module"
+mgit push "Refactor user authentication module"
 ```
 
 ### Interactive TUI Inspector
 ```bash
-mg show
+mgit show
 ```
 In the TUI:
 - **Up / Down**: Navigate commit history.
@@ -58,10 +58,10 @@ In the TUI:
 ### Updating & Uninstalling
 ```bash
 # Update mgit to the latest version
-mg update
+mgit update
 
 # Uninstall mgit
-mg uninstall
+mgit uninstall
 ```
 
 ---
