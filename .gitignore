@@ -3,6 +3,8 @@
 *.exe
 mg
 mg.exe
+NUL
+nul
 
 # IDE / OS
 .vscode/
