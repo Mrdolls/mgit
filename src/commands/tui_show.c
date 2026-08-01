@@ -79,11 +79,6 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < width; i++) printf("─");
         printf("%s\n", ANSI_RESET);
 
-        printf("%s[UP/DOWN]%s Choose Action  %s[ENTER]%s Confirm  %s[ESC]%s Cancel\n",
-               ANSI_BRIGHT_CYAN, ANSI_RESET,
-               ANSI_BRIGHT_GREEN, ANSI_RESET,
-               ANSI_BRIGHT_RED, ANSI_RESET);
-
     } else {
         /* MAIN COMMIT LIST VIEW - Blue & Green Theme */
         int hash_w = 7;
@@ -140,13 +135,14 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         printf("%s", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < width; i++) printf("─");
         printf("%s\n", ANSI_RESET);
-
-        printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Select Commit  %s[P]%s Pull  %s[Q]%s Quit\n",
-               ANSI_BRIGHT_CYAN, ANSI_RESET,
-               ANSI_BRIGHT_GREEN, ANSI_RESET,
-               ANSI_BRIGHT_YELLOW, ANSI_RESET,
-               ANSI_BRIGHT_MAGENTA, ANSI_RESET);
     }
+
+    /* Clean Uniform Footer Help Bar */
+    printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Select Commit  %s[P]%s Pull  %s[Q/ESC]%s Quit\n",
+           ANSI_BRIGHT_CYAN, ANSI_RESET,
+           ANSI_BRIGHT_GREEN, ANSI_RESET,
+           ANSI_BRIGHT_YELLOW, ANSI_RESET,
+           ANSI_BRIGHT_MAGENTA, ANSI_RESET);
     fflush(stdout);
 }
 
