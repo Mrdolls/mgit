@@ -10,24 +10,25 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                      int action_menu_open, int action_selected, int rows, int cols) {
     term_clear_screen();
 
-    if (cols < 70) cols = 80;
+    if (cols < 75) cols = 80;
 
-    int box_width = cols - 4;
-    if (box_width > 76) box_width = 76;
-    if (box_width < 45) box_width = 45;
+    int right_panel_w = 34;
+    int left_panel_w = cols - right_panel_w - 3;
+    if (left_panel_w < 40) left_panel_w = 40;
 
     /* Top Header Box (Clean & Dynamic) */
     printf(" ┌");
-    for (int i = 0; i < box_width - 2; i++) printf("─");
+    for (int i = 0; i < cols - 4; i++) printf("─");
     printf("┐\n");
 
     printf(" │%s%s  MGIT TUI HISTORY INSPECTOR", ANSI_BOLD, ANSI_CYAN);
-    int pad = box_width - 32;
+    int pad = cols - 34;
+    if (pad < 0) pad = 0;
     for (int i = 0; i < pad; i++) printf(" ");
     printf("%s│\n", ANSI_RESET);
 
     printf(" └");
-    for (int i = 0; i < box_width - 2; i++) printf("─");
+    for (int i = 0; i < cols - 4; i++) printf("─");
     printf("┘\n");
 
     /* Status Line */
@@ -52,18 +53,17 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     }
 
     printf(" ");
-    for (int i = 0; i < box_width; i++) printf("─");
+    for (int i = 0; i < cols - 4; i++) printf("─");
     printf("\n");
 
-    /* Calculate Column Widths */
+    /* Column Width Calculations */
     int hash_w = 7;
-    int author_w = 12;
-    int date_w = 16;
-    int subject_w = box_width - (hash_w + author_w + date_w + 14);
-    if (subject_w < 15) subject_w = 15;
+    int author_w = 11;
+    int date_w = 14;
+    int subject_w = left_panel_w - (hash_w + author_w + date_w + 11);
+    if (subject_w < 12) subject_w = 12;
 
     int max_display = rows - 8;
-    if (action_menu_open) max_display -= 6;
     if (max_display < 1) max_display = 1;
 
     int start_index = 0;
@@ -74,71 +74,92 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     int end_index = start_index + max_display;
     if (end_index > count) end_index = count;
 
-    for (int i = start_index; i < end_index; i++) {
+    int visible_rows = end_index - start_index;
+
+    for (int row_idx = 0; row_idx < visible_rows; row_idx++) {
+        int i = start_index + row_idx;
         int is_head = (head_hash && strlen(head_hash) > 0 && strncmp(commits[i].hash, head_hash, strlen(commits[i].hash)) == 0);
 
+        /* Print Left Column (Commit History Row) */
         if (i == selected) {
-            /* Selected Row */
             if (is_head) {
-                printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s%s\n",
+                printf("%s %s %-7.7s │ %-11.11s │ %-14.14s │ %-.*s %s%s",
                        ANSI_BG_CYAN, ANSI_BOLD,
                        commits[i].hash, commits[i].author, commits[i].date,
                        subject_w, commits[i].subject,
                        MGIT_HEAD_BADGE, ANSI_RESET);
             } else {
-                printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s\n",
+                printf("%s %s %-7.7s │ %-11.11s │ %-14.14s │ %-.*s %s",
                        ANSI_BG_CYAN, ANSI_BOLD,
                        commits[i].hash, commits[i].author, commits[i].date,
                        subject_w, commits[i].subject,
                        ANSI_RESET);
             }
         } else {
-            /* Unselected Row */
             if (is_head) {
-                printf("   %s%s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s %s\n",
+                printf("   %s%s%-7.7s%s │ %s%-11.11s%s │ %s%-14.14s%s │ %s%-.*s %s",
                        ANSI_BOLD, ANSI_BRIGHT_GREEN, commits[i].hash, ANSI_RESET,
                        ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
                        ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
                        ANSI_RESET, subject_w, commits[i].subject, MGIT_HEAD_BADGE);
             } else {
-                printf("   %s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s%s\n",
+                printf("   %s%-7.7s%s │ %s%-11.11s%s │ %s%-14.14s%s │ %s%-.*s%s",
                        ANSI_BRIGHT_YELLOW, commits[i].hash, ANSI_RESET,
                        ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
                        ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
                        ANSI_RESET, subject_w, commits[i].subject, ANSI_RESET);
             }
         }
+
+        /* Print Right Side Panel (Action Menu when opened) */
+        if (action_menu_open) {
+            if (row_idx == 0) {
+                printf("  %s┌──────────────────────────────┐%s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            } else if (row_idx == 1) {
+                printf("  %s│%s %sCOMMIT ACTIONS: %s%-7.7s%s%s│%s",
+                       ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BOLD, ANSI_BRIGHT_CYAN, commits[selected].hash, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            } else if (row_idx == 2) {
+                printf("  %s├──────────────────────────────┤%s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            } else if (row_idx == 3) {
+                if (action_selected == 0) {
+                    printf("  %s│%s %s > Switch (git checkout)    %s%s│%s",
+                           ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BG_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                } else {
+                    printf("  %s│%s    Switch (git checkout)    %s│%s", ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                }
+            } else if (row_idx == 4) {
+                if (action_selected == 1) {
+                    printf("  %s│%s %s > Restauration (reset --hard)%s%s│%s",
+                           ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BG_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                } else {
+                    printf("  %s│%s    Restauration (reset --hard)%s│%s", ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                }
+            } else if (row_idx == 5) {
+                if (action_selected == 2) {
+                    printf("  %s│%s %s > Cancel                   %s%s│%s",
+                           ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BG_CYAN, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                } else {
+                    printf("  %s│%s    Cancel                   %s│%s", ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+                }
+            } else if (row_idx == 6) {
+                printf("  %s└──────────────────────────────┘%s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            }
+        }
+        printf("\n");
     }
 
     printf(" ");
-    for (int i = 0; i < box_width; i++) printf("─");
+    for (int i = 0; i < cols - 4; i++) printf("─");
     printf("\n");
 
-    /* ACTION POPUP MODAL (When Enter is pressed) */
+    /* Footer Help Bar */
     if (action_menu_open) {
-        printf(" %s┌────────────────────────────────────────────────────────┐%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        printf(" %s│ %sCOMMIT ACTIONS: %s%s (%.30s)%s", ANSI_BRIGHT_YELLOW, ANSI_BOLD, ANSI_BRIGHT_CYAN, commits[selected].hash, commits[selected].subject, ANSI_RESET);
-        printf("%s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        printf(" %s├────────────────────────────────────────────────────────┤%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        
-        if (action_selected == 0) {
-            printf(" %s│ %s > [1] Switch (git checkout)                             %s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_BG_CYAN, ANSI_RESET, ANSI_RESET);
-            printf(" %s│    [2] Restauration (git reset --hard)                      │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-            printf(" %s│    [3] Cancel                                               │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        } else if (action_selected == 1) {
-            printf(" %s│    [1] Switch (git checkout)                                │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-            printf(" %s│ %s > [2] Restauration (git reset --hard)                      %s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_BG_CYAN, ANSI_RESET, ANSI_RESET);
-            printf(" %s│    [3] Cancel                                               │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        } else {
-            printf(" %s│    [1] Switch (git checkout)                                │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-            printf(" %s│    [2] Restauration (git reset --hard)                      │%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-            printf(" %s│ %s > [3] Cancel                                               %s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_BG_CYAN, ANSI_RESET, ANSI_RESET);
-        }
-        printf(" %s└────────────────────────────────────────────────────────┘%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        printf(" %s[UP/DOWN] Select Option  [ENTER] Confirm  [ESC] Cancel%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+        printf("%s[UP/DOWN]%s Choose Action  %s[ENTER]%s Confirm  %s[ESC]%s Cancel Side Menu\n",
+               ANSI_BRIGHT_YELLOW, ANSI_RESET,
+               ANSI_BRIGHT_GREEN, ANSI_RESET,
+               ANSI_BRIGHT_RED, ANSI_RESET);
     } else {
-        /* Clean Footer Help Bar */
-        printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Select Commit  %s[P]%s Pull Remote  %s[Q]%s Quit\n",
+        printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Actions  %s[P]%s Pull  %s[Q]%s Quit\n",
                ANSI_BRIGHT_CYAN, ANSI_RESET,
                ANSI_BRIGHT_GREEN, ANSI_RESET,
                ANSI_BRIGHT_YELLOW, ANSI_RESET,
@@ -192,7 +213,7 @@ int cmd_show(int argc, char **argv) {
         KeyCode key = term_read_key();
 
         if (action_menu_open) {
-            /* Handling key input inside Action Menu Modal */
+            /* Input in Right Action Panel */
             switch (key) {
                 case KEY_UP:
                     if (action_selected > 0) action_selected--;
@@ -209,7 +230,7 @@ int cmd_show(int argc, char **argv) {
 
                 case KEY_ENTER: {
                     if (action_selected == 0) {
-                        /* Action 1: Switch (checkout) */
+                        /* Switch (checkout) */
                         action_menu_open = 0;
                         term_disable_raw_mode();
                         term_clear_screen();
@@ -239,7 +260,7 @@ int cmd_show(int argc, char **argv) {
 
                         term_enable_raw_mode();
                     } else if (action_selected == 1) {
-                        /* Action 2: Restauration (reset --hard) */
+                        /* Restauration (reset --hard) */
                         action_menu_open = 0;
                         term_disable_raw_mode();
                         term_clear_screen();
@@ -275,7 +296,7 @@ int cmd_show(int argc, char **argv) {
 
                         term_enable_raw_mode();
                     } else {
-                        /* Action 3: Cancel */
+                        /* Cancel */
                         action_menu_open = 0;
                     }
                     break;
@@ -285,7 +306,7 @@ int cmd_show(int argc, char **argv) {
                     break;
             }
         } else {
-            /* Main TUI List Navigation */
+            /* Navigation in Commit History List */
             switch (key) {
                 case KEY_UP:
                     if (selected > 0) selected--;
