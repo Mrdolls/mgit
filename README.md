@@ -18,7 +18,7 @@
 Run the one-line installer:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Mrdolls/mgit/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Mrdolls/mgit/master/install.sh | bash
 ```
 
 Or build manually from source:
