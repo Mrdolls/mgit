@@ -146,9 +146,40 @@ int git_push(const char *branch) {
     return system(cmd);
 }
 
+static int get_most_recent_branch(char *buf, size_t size) {
+#ifdef _WIN32
+    FILE *fp = popen("git for-each-ref --sort=-committerdate --format=\"%(refname:short)\" refs/heads/ refs/remotes/origin/ 2>nul", "r");
+#else
+    FILE *fp = popen("git for-each-ref --sort=-committerdate --format=\"%(refname:short)\" refs/heads/ refs/remotes/origin/ 2>/dev/null", "r");
+#endif
+    if (!fp) return 0;
+
+    char line[128];
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (strlen(line) == 0) continue;
+        if (strcmp(line, "origin/HEAD") == 0 || strcmp(line, "HEAD") == 0) continue;
+
+        char *branch_name = line;
+        if (strncmp(branch_name, "origin/", 7) == 0) {
+            branch_name += 7;
+        }
+
+        if (strlen(branch_name) > 0) {
+            strncpy(buf, branch_name, size - 1);
+            buf[size - 1] = '\0';
+            pclose(fp);
+            return 1;
+        }
+    }
+    pclose(fp);
+    return 0;
+}
+
 int git_pull_quiet(const char *branch) {
     char cmd[1024];
 
+    /* If on a normal branch (not HEAD), pull directly */
     if (branch && strlen(branch) > 0 && strcmp(branch, "HEAD") != 0 && strncmp(branch, "(HEAD", 5) != 0) {
         printf("%s %sPulling from remote%s (%sgit pull origin %s%s)\n",
                MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, branch, ANSI_RESET);
@@ -156,84 +187,25 @@ int git_pull_quiet(const char *branch) {
         return system(cmd);
     }
 
-    /* Detached HEAD fallback: smart detection of default local/remote branch */
-    char default_branch[64] = "";
-
-#ifdef _WIN32
-    FILE *fp = popen("git branch --list master 2>nul", "r");
-#else
-    FILE *fp = popen("git branch --list master 2>/dev/null", "r");
-#endif
-    if (fp) {
-        char buf[128] = "";
-        if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
-            strcpy(default_branch, "master");
-        }
-        pclose(fp);
+    /* Detached HEAD: automatically find the branch with the most recent commit */
+    char recent_branch[64] = "master";
+    if (!get_most_recent_branch(recent_branch, sizeof(recent_branch))) {
+        strcpy(recent_branch, "master");
     }
 
-    if (strlen(default_branch) == 0) {
-#ifdef _WIN32
-        fp = popen("git branch --list main 2>nul", "r");
-#else
-        fp = popen("git branch --list main 2>/dev/null", "r");
-#endif
-        if (fp) {
-            char buf[128] = "";
-            if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
-                strcpy(default_branch, "main");
-            }
-            pclose(fp);
-        }
-    }
-
-    if (strlen(default_branch) == 0) {
-#ifdef _WIN32
-        fp = popen("git branch -r --list origin/master 2>nul", "r");
-#else
-        fp = popen("git branch -r --list origin/master 2>/dev/null", "r");
-#endif
-        if (fp) {
-            char buf[128] = "";
-            if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
-                strcpy(default_branch, "master");
-            }
-            pclose(fp);
-        }
-    }
-
-    if (strlen(default_branch) == 0) {
-#ifdef _WIN32
-        fp = popen("git branch -r --list origin/main 2>nul", "r");
-#else
-        fp = popen("git branch -r --list origin/main 2>/dev/null", "r");
-#endif
-        if (fp) {
-            char buf[128] = "";
-            if (fgets(buf, sizeof(buf), fp) && strlen(buf) > 0) {
-                strcpy(default_branch, "main");
-            }
-            pclose(fp);
-        }
-    }
-
-    if (strlen(default_branch) == 0) {
-        strcpy(default_branch, "master");
-    }
-
-    printf("%s %sReconnecting to branch '%s' and pulling latest updates...%s\n",
-           MGIT_BADGE, ANSI_BOLD, default_branch, ANSI_RESET);
+    printf("%s %sSwitching to most recent branch '%s' and pulling latest updates...%s\n",
+           MGIT_BADGE, ANSI_BOLD, recent_branch, ANSI_RESET);
 
 #ifdef _WIN32
     snprintf(cmd, sizeof(cmd), "git checkout %s 2>nul || git checkout -b %s origin/%s 2>nul",
-             default_branch, default_branch, default_branch);
+             recent_branch, recent_branch, recent_branch);
     system(cmd);
-    snprintf(cmd, sizeof(cmd), "git pull origin %s", default_branch);
+    snprintf(cmd, sizeof(cmd), "git pull origin %s", recent_branch);
 #else
     snprintf(cmd, sizeof(cmd), "git checkout %s 2>/dev/null || git checkout -b %s origin/%s 2>/dev/null",
-             default_branch, default_branch, default_branch);
+             recent_branch, recent_branch, recent_branch);
     system(cmd);
-    snprintf(cmd, sizeof(cmd), "git pull origin %s", default_branch);
+    snprintf(cmd, sizeof(cmd), "git pull origin %s", recent_branch);
 #endif
 
     return system(cmd);
