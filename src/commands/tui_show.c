@@ -10,26 +10,14 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                      int action_menu_open, int action_selected, int rows, int cols) {
     term_clear_screen();
 
-    if (cols < 60) cols = 80;
+    /* Safety width calculation */
+    int width = cols - 2;
+    if (width > 80) width = 80;
+    if (width < 50) width = 50;
 
-    int box_width = cols - 4;
-    if (box_width > 76) box_width = 76;
-    if (box_width < 45) box_width = 45;
-
-    /* Top Header Box */
-    printf(" ┌");
-    for (int i = 0; i < box_width - 2; i++) printf("─");
-    printf("┐\n");
-
-    printf(" │%s%s  MGIT TUI HISTORY INSPECTOR", ANSI_BOLD, ANSI_CYAN);
-    int pad = box_width - 32;
-    for (int i = 0; i < pad; i++) printf(" ");
-    printf("%s│\n", ANSI_RESET);
-
-    printf(" └");
-    for (int i = 0; i < box_width - 2; i++) printf("─");
-    printf("┘\n");
-
+    /* Header Title */
+    printf("\n %s%s=== MGIT TUI HISTORY INSPECTOR ===%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
+    
     /* Status Line */
     printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
@@ -51,84 +39,45 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
     }
 
-    printf(" ");
-    for (int i = 0; i < box_width; i++) printf("─");
-    printf("\n");
+    /* Top Divider */
+    printf("%s", ANSI_BRIGHT_BLACK);
+    for (int i = 0; i < width; i++) printf("─");
+    printf("%s\n", ANSI_RESET);
 
     if (action_menu_open) {
-        /* ACTION MODAL CARD VIEW (Zero line wrapping / alignment bugs) */
-        printf("\n ");
-        printf("%s┌", ANSI_BRIGHT_YELLOW);
-        for (int i = 0; i < box_width - 2; i++) printf("─");
-        printf("┐%s\n", ANSI_RESET);
-
-        printf(" %s│%s%s               SELECT COMMIT ACTION", ANSI_BRIGHT_YELLOW, ANSI_BOLD, ANSI_CYAN);
-        pad = box_width - 39;
-        for (int i = 0; i < pad; i++) printf(" ");
-        printf("%s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-
-        printf(" %s├", ANSI_BRIGHT_YELLOW);
-        for (int i = 0; i < box_width - 2; i++) printf("─");
-        printf("┤%s\n", ANSI_RESET);
-
-        /* Target Commit Info */
-        char info_str[256];
-        snprintf(info_str, sizeof(info_str), "Target : %s (%.35s)", commits[selected].hash, commits[selected].subject);
-        printf(" %s│%s  %-*.*s%s│%s\n",
-               ANSI_BRIGHT_YELLOW, ANSI_BOLD, box_width - 5, box_width - 5, info_str, ANSI_BRIGHT_YELLOW, ANSI_RESET);
-
-        printf(" %s├", ANSI_BRIGHT_YELLOW);
-        for (int i = 0; i < box_width - 2; i++) printf("─");
-        printf("┤%s\n", ANSI_RESET);
-
-        printf(" %s│%s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        for (int i = 0; i < box_width - 2; i++) printf(" ");
-        printf("%s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        /* CLEAN ACTION MODAL VIEW */
+        printf("\n %s%sSELECT COMMIT ACTION%s\n", ANSI_BOLD, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        printf(" %sTarget : %s%s (%s)%s\n",
+               ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
+        
+        printf("%s", ANSI_BRIGHT_YELLOW);
+        for (int i = 0; i < width; i++) printf("─");
+        printf("%s\n\n", ANSI_RESET);
 
         /* Option 0: Switch */
         if (action_selected == 0) {
-            char opt[256] = " > Switch (git checkout)";
-            printf(" %s│%s  %s%-*.*s%s%s│%s\n",
-                   ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BG_CYAN, box_width - 6, box_width - 6, opt, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s > Switch (git checkout)%s\n", ANSI_BG_CYAN, ANSI_RESET);
         } else {
-            char opt[256] = "   Switch (git checkout)";
-            printf(" %s│%s  %-*.*s%s│%s\n",
-                   ANSI_BRIGHT_YELLOW, ANSI_RESET, box_width - 6, box_width - 6, opt, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf("    Switch (git checkout)\n");
         }
 
         /* Option 1: Restauration */
         if (action_selected == 1) {
-            char opt[256] = " > Restauration (git reset --hard)";
-            printf(" %s│%s  %s%-*.*s%s%s│%s\n",
-                   ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BG_CYAN, box_width - 6, box_width - 6, opt, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s > Restauration (git reset --hard)%s\n", ANSI_BG_CYAN, ANSI_RESET);
         } else {
-            char opt[256] = "   Restauration (git reset --hard)";
-            printf(" %s│%s  %-*.*s%s│%s\n",
-                   ANSI_BRIGHT_YELLOW, ANSI_RESET, box_width - 6, box_width - 6, opt, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf("    Restauration (git reset --hard)\n");
         }
 
         /* Option 2: Cancel */
         if (action_selected == 2) {
-            char opt[256] = " > Cancel";
-            printf(" %s│%s  %s%-*.*s%s%s│%s\n",
-                   ANSI_BRIGHT_YELLOW, ANSI_RESET, ANSI_BG_CYAN, box_width - 6, box_width - 6, opt, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf(" %s > Cancel%s\n", ANSI_BG_CYAN, ANSI_RESET);
         } else {
-            char opt[256] = "   Cancel";
-            printf(" %s│%s  %-*.*s%s│%s\n",
-                   ANSI_BRIGHT_YELLOW, ANSI_RESET, box_width - 6, box_width - 6, opt, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf("    Cancel\n");
         }
 
-        printf(" %s│%s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-        for (int i = 0; i < box_width - 2; i++) printf(" ");
-        printf("%s│%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
-
-        printf(" %s└", ANSI_BRIGHT_YELLOW);
-        for (int i = 0; i < box_width - 2; i++) printf("─");
-        printf("┘%s\n", ANSI_RESET);
-
-        printf(" ");
-        for (int i = 0; i < box_width; i++) printf("─");
-        printf("\n");
+        printf("\n%s", ANSI_BRIGHT_YELLOW);
+        for (int i = 0; i < width; i++) printf("─");
+        printf("%s\n", ANSI_RESET);
 
         printf("%s[UP/DOWN]%s Choose Action  %s[ENTER]%s Confirm  %s[ESC]%s Cancel\n",
                ANSI_BRIGHT_YELLOW, ANSI_RESET,
@@ -138,10 +87,10 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     } else {
         /* MAIN COMMIT LIST VIEW */
         int hash_w = 7;
-        int author_w = 12;
-        int date_w = 16;
-        int subject_w = box_width - (hash_w + author_w + date_w + 12);
-        if (subject_w < 15) subject_w = 15;
+        int author_w = 11;
+        int date_w = 14;
+        int subject_w = width - (hash_w + author_w + date_w + 10);
+        if (subject_w < 20) subject_w = 20;
 
         int max_display = rows - 8;
         if (max_display < 1) max_display = 1;
@@ -159,13 +108,13 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
             if (i == selected) {
                 if (is_head) {
-                    printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s%s\n",
+                    printf("%s %s %-7.7s │ %-11.11s │ %-14.14s │ %-.*s %s%s\n",
                            ANSI_BG_CYAN, ANSI_BOLD,
                            commits[i].hash, commits[i].author, commits[i].date,
                            subject_w, commits[i].subject,
                            MGIT_HEAD_BADGE, ANSI_RESET);
                 } else {
-                    printf("%s %s %-7.7s │ %-12.12s │ %-16.16s │ %-.*s %s\n",
+                    printf("%s %s %-7.7s │ %-11.11s │ %-14.14s │ %-.*s %s\n",
                            ANSI_BG_CYAN, ANSI_BOLD,
                            commits[i].hash, commits[i].author, commits[i].date,
                            subject_w, commits[i].subject,
@@ -173,13 +122,13 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                 }
             } else {
                 if (is_head) {
-                    printf("   %s%s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s %s\n",
+                    printf("   %s%s%-7.7s%s │ %s%-11.11s%s │ %s%-14.14s%s │ %s%-.*s %s\n",
                            ANSI_BOLD, ANSI_BRIGHT_GREEN, commits[i].hash, ANSI_RESET,
                            ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
                            ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
                            ANSI_RESET, subject_w, commits[i].subject, MGIT_HEAD_BADGE);
                 } else {
-                    printf("   %s%-7.7s%s │ %s%-12.12s%s │ %s%-16.16s%s │ %s%-.*s%s\n",
+                    printf("   %s%-7.7s%s │ %s%-11.11s%s │ %s%-14.14s%s │ %s%-.*s%s\n",
                            ANSI_BRIGHT_YELLOW, commits[i].hash, ANSI_RESET,
                            ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
                            ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
@@ -188,9 +137,9 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
             }
         }
 
-        printf(" ");
-        for (int i = 0; i < box_width; i++) printf("─");
-        printf("\n");
+        printf("%s", ANSI_BRIGHT_BLACK);
+        for (int i = 0; i < width; i++) printf("─");
+        printf("%s\n", ANSI_RESET);
 
         printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Select Commit  %s[P]%s Pull  %s[Q]%s Quit\n",
                ANSI_BRIGHT_CYAN, ANSI_RESET,
@@ -246,7 +195,6 @@ int cmd_show(int argc, char **argv) {
         KeyCode key = term_read_key();
 
         if (action_menu_open) {
-            /* Modal Card Navigation */
             switch (key) {
                 case KEY_UP:
                     if (action_selected > 0) action_selected--;
@@ -339,7 +287,7 @@ int cmd_show(int argc, char **argv) {
                     break;
             }
         } else {
-            /* History List Navigation */
+            /* Main List Navigation */
             switch (key) {
                 case KEY_UP:
                     if (selected > 0) selected--;
