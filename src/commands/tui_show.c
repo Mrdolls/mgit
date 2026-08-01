@@ -33,13 +33,16 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                      int action_menu_open, int action_selected, int rows, int cols) {
     term_clear_screen();
 
-    /* Safety width calculation */
-    int width = cols - 2;
+    /* Width calculation & Left Margin for Centering */
+    int width = cols - 4;
     if (width > 80) width = 80;
     if (width < 50) width = 50;
 
+    int margin = (cols - width) / 2;
+    if (margin < 0) margin = 0;
+
     if (action_menu_open) {
-        /* PERFECTLY CENTERED & ALIGNED ACTION MODAL VIEW */
+        /* CENTERED ACTION MODAL VIEW */
         int card_w = 56;
         if (card_w > cols - 4) card_w = cols - 4;
         if (card_w < 42) card_w = 42;
@@ -104,9 +107,19 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < bottom_pad; i++) printf("\n");
 
     } else {
-        /* MAIN COMMIT LIST VIEW - Blue & Green Theme */
-        printf("\n %s%s=== MGIT TUI HISTORY INSPECTOR ===%s\n", ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_RESET);
+        /* MAIN COMMIT LIST VIEW - Fully Centered */
+
+        /* Header Title Centered */
+        int title_len = 34;
+        int title_pad = margin + (width - title_len) / 2;
+        if (title_pad < 0) title_pad = 0;
+
+        printf("\n");
+        for (int i = 0; i < title_pad; i++) printf(" ");
+        printf("%s%s=== MGIT TUI HISTORY INSPECTOR ===%s\n", ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_RESET);
         
+        /* Status Line Centered */
+        for (int i = 0; i < margin; i++) printf(" ");
         printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
                ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
                ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
@@ -127,6 +140,8 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
                    ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
         }
 
+        /* Top Divider */
+        for (int i = 0; i < margin; i++) printf(" ");
         printf("%s", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < width; i++) printf("─");
         printf("%s\n", ANSI_RESET);
@@ -150,6 +165,8 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
         for (int i = start_index; i < end_index; i++) {
             int is_head = (head_hash && strlen(head_hash) > 0 && strncmp(commits[i].hash, head_hash, strlen(commits[i].hash)) == 0);
+
+            for (int m = 0; m < margin; m++) printf(" ");
 
             if (i == selected) {
                 if (is_head) {
@@ -182,15 +199,20 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
             }
         }
 
+        /* Bottom Divider */
+        for (int i = 0; i < margin; i++) printf(" ");
         printf("%s", ANSI_BRIGHT_BLUE);
         for (int i = 0; i < width; i++) printf("─");
         printf("%s\n", ANSI_RESET);
     }
 
-    /* Clean Uniform Footer Help Bar */
-    printf("%s[UP/DOWN]%s Navigate  %s[ENTER]%s Select Commit  %s[P]%s Pull  %s[Q/ESC]%s Quit\n",
-           ANSI_BRIGHT_CYAN, ANSI_RESET,
-           ANSI_BRIGHT_GREEN, ANSI_RESET,
+    /* Centered Minimal Footer Bar: [P] Pull  [Q/ESC] Quit */
+    int footer_len = 22;
+    int footer_pad = margin + (width - footer_len) / 2;
+    if (footer_pad < 0) footer_pad = 0;
+
+    for (int i = 0; i < footer_pad; i++) printf(" ");
+    printf("%s[P]%s Pull    %s[Q/ESC]%s Quit\n",
            ANSI_BRIGHT_YELLOW, ANSI_RESET,
            ANSI_BRIGHT_MAGENTA, ANSI_RESET);
     fflush(stdout);
