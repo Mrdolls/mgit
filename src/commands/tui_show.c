@@ -50,7 +50,7 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         int left_pad = (cols - card_w) / 2;
         if (left_pad < 0) left_pad = 0;
 
-        int modal_rows = 12;
+        int modal_rows = 14;
         int top_pad = (rows - modal_rows - 3) / 2;
         if (top_pad < 1) top_pad = 1;
 
@@ -73,13 +73,23 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
         /* Row 3a: DESC */
         char desc_str[256];
-        snprintf(desc_str, sizeof(desc_str), "DESC: %.38s", commits[selected].subject);
+        snprintf(desc_str, sizeof(desc_str), "DESC   : %.38s", commits[selected].subject);
         print_modal_row(left_pad, "  ", desc_str, card_w, 0, 1);
 
         /* Row 3b: ID */
         char id_str[256];
-        snprintf(id_str, sizeof(id_str), "ID  : %s", commits[selected].hash);
+        snprintf(id_str, sizeof(id_str), "ID     : %s", commits[selected].hash);
         print_modal_row(left_pad, "  ", id_str, card_w, 0, 1);
+
+        /* Row 3c: Author */
+        char author_str[256];
+        snprintf(author_str, sizeof(author_str), "Author : %s", commits[selected].author);
+        print_modal_row(left_pad, "  ", author_str, card_w, 0, 1);
+
+        /* Row 3d: Date */
+        char date_str[256];
+        snprintf(date_str, sizeof(date_str), "Date   : %s", commits[selected].date);
+        print_modal_row(left_pad, "  ", date_str, card_w, 0, 1);
 
         /* Row 4: Divider */
         for (int i = 0; i < left_pad; i++) printf(" ");
@@ -108,11 +118,11 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┘%s\n", ANSI_RESET);
 
-        int bottom_pad = rows - top_pad - 14;
+        int bottom_pad = rows - top_pad - 16;
         for (int i = 0; i < bottom_pad; i++) printf("\n");
 
     } else {
-        /* MAIN COMMIT LIST VIEW - Fully Centered */
+        /* MAIN COMMIT LIST VIEW - Clean & Uncluttered */
 
         /* Header Title Centered */
         int title_len = 34;
@@ -152,9 +162,7 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         printf("%s\n", ANSI_RESET);
 
         int hash_w = 7;
-        int author_w = 11;
-        int date_w = 14;
-        int subject_w = width - (hash_w + author_w + date_w + 10);
+        int subject_w = width - (hash_w + 6);
         if (subject_w < 20) subject_w = 20;
 
         int max_display = rows - 8;
@@ -175,30 +183,26 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
             if (i == selected) {
                 if (is_head) {
-                    printf("%s %s %-7.7s │ %-11.11s │ %-14.14s │ %-.*s %s%s\n",
+                    printf("%s %s %-7.7s │ %-.*s %s%s\n",
                            ANSI_BG_CYAN, ANSI_BOLD,
-                           commits[i].hash, commits[i].author, commits[i].date,
+                           commits[i].hash,
                            subject_w, commits[i].subject,
                            MGIT_HEAD_BADGE, ANSI_RESET);
                 } else {
-                    printf("%s %s %-7.7s │ %-11.11s │ %-14.14s │ %-.*s %s\n",
+                    printf("%s %s %-7.7s │ %-.*s %s\n",
                            ANSI_BG_CYAN, ANSI_BOLD,
-                           commits[i].hash, commits[i].author, commits[i].date,
+                           commits[i].hash,
                            subject_w, commits[i].subject,
                            ANSI_RESET);
                 }
             } else {
                 if (is_head) {
-                    printf("   %s%s%-7.7s%s │ %s%-11.11s%s │ %s%-14.14s%s │ %s%-.*s %s\n",
+                    printf("   %s%s%-7.7s%s │ %s%-.*s %s\n",
                            ANSI_BOLD, ANSI_BRIGHT_GREEN, commits[i].hash, ANSI_RESET,
-                           ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
-                           ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
                            ANSI_RESET, subject_w, commits[i].subject, MGIT_HEAD_BADGE);
                 } else {
-                    printf("   %s%-7.7s%s │ %s%-11.11s%s │ %s%-14.14s%s │ %s%-.*s%s\n",
+                    printf("   %s%-7.7s%s │ %s%-.*s%s\n",
                            ANSI_BRIGHT_GREEN, commits[i].hash, ANSI_RESET,
-                           ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
-                           ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
                            ANSI_RESET, subject_w, commits[i].subject, ANSI_RESET);
                 }
             }
