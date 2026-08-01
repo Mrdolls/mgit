@@ -240,15 +240,15 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         printf("%s\n", ANSI_RESET);
     }
 
-    /* Centered Footer Bar: [ENTER] Select Commit    [P] Pull    [Q/ESC] Quit */
+    /* Centered Footer Bar: [P] Pull    [ENTER] Select Commit    [Q/ESC] Quit */
     int footer_len = 44;
     int footer_pad = (cols - footer_len) / 2;
     if (footer_pad < 0) footer_pad = 0;
 
     for (int i = 0; i < footer_pad; i++) printf(" ");
-    printf("%s[ENTER]%s Select Commit    %s[P]%s Pull    %s[Q/ESC]%s Quit\n",
-           ANSI_BRIGHT_GREEN, ANSI_RESET,
+    printf("%s[P]%s Pull    %s[ENTER]%s Select Commit    %s[Q/ESC]%s Quit\n",
            ANSI_BRIGHT_YELLOW, ANSI_RESET,
+           ANSI_BRIGHT_GREEN, ANSI_RESET,
            ANSI_BRIGHT_MAGENTA, ANSI_RESET);
     fflush(stdout);
 }
