@@ -194,7 +194,7 @@ int git_get_history(CommitInfo **commits_out, int *count_out) {
     *commits_out = NULL;
     *count_out = 0;
 
-    FILE *fp = popen("git log -n 50 --pretty=format:\"%h|%an|%ar|%s\"", "r");
+    FILE *fp = popen("git log --all -n 50 --pretty=format:\"%h|%an|%ar|%s\"", "r");
     if (!fp) return 0;
 
     int capacity = 50;
