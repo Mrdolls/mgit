@@ -18,7 +18,10 @@ static void print_modal_row(int left_pad, const char *prefix, const char *text, 
     if (text_len > inner_w) text_len = inner_w;
 
     if (is_header) {
-        printf("%s%s%-*.*s%s", ANSI_BOLD, ANSI_BRIGHT_GREEN, inner_w, inner_w, line_buf, ANSI_RESET);
+        int title_pad = (inner_w - text_len) / 2;
+        if (title_pad < 0) title_pad = 0;
+        for (int i = 0; i < title_pad; i++) printf(" ");
+        printf("%s%s%-*.*s%s", ANSI_BOLD, ANSI_BRIGHT_GREEN, inner_w - title_pad, inner_w - title_pad, line_buf, ANSI_RESET);
     } else if (is_highlighted) {
         printf("%s%s%-*.*s%s", ANSI_BG_BLUE, ANSI_BOLD, inner_w, inner_w, line_buf, ANSI_RESET);
     } else {
@@ -26,6 +29,34 @@ static void print_modal_row(int left_pad, const char *prefix, const char *text, 
     }
 
     printf("%s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
+}
+
+static void print_modal_field(int left_pad, const char *label, const char *label_color,
+                              const char *value, const char *val_color, int card_w) {
+    for (int i = 0; i < left_pad; i++) printf(" ");
+
+    printf("%s│%s  ", ANSI_BRIGHT_BLUE, ANSI_RESET);
+
+    int inner_w = card_w - 6;
+
+    char full_str[512];
+    snprintf(full_str, sizeof(full_str), "%-6.6s : %s", label, value);
+    int text_len = strlen(full_str);
+    if (text_len > inner_w) text_len = inner_w;
+
+    int val_max = inner_w - 9;
+    if (val_max < 5) val_max = 5;
+
+    printf("%s%s%-6.6s%s %s:%s %s%s%-*.*s%s",
+           ANSI_BOLD, label_color, label, ANSI_RESET,
+           ANSI_BRIGHT_BLUE, ANSI_RESET,
+           ANSI_BOLD, val_color, val_max, val_max, value, ANSI_RESET);
+
+    int printed_len = 6 + 3 + ((int)strlen(value) > val_max ? val_max : (int)strlen(value));
+    int remaining = inner_w - printed_len;
+    for (int i = 0; i < remaining; i++) printf(" ");
+
+    printf("  %s│%s\n", ANSI_BRIGHT_BLUE, ANSI_RESET);
 }
 
 static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch,
@@ -43,9 +74,9 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
     if (action_menu_open) {
         /* CENTERED ACTION MODAL VIEW */
-        int card_w = 56;
+        int card_w = 58;
         if (card_w > cols - 4) card_w = cols - 4;
-        if (card_w < 42) card_w = 42;
+        if (card_w < 44) card_w = 44;
 
         int left_pad = (cols - card_w) / 2;
         if (left_pad < 0) left_pad = 0;
@@ -62,8 +93,8 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┐%s\n", ANSI_RESET);
 
-        /* Row 1: Header Title */
-        print_modal_row(left_pad, "  ", "SELECT COMMIT ACTION", card_w, 0, 1);
+        /* Row 1: Header Title Centered (Image 2) */
+        print_modal_row(left_pad, "", "SELECT COMMIT ACTION", card_w, 0, 1);
 
         /* Row 2: Divider */
         for (int i = 0; i < left_pad; i++) printf(" ");
@@ -71,25 +102,17 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < card_w - 2; i++) printf("─");
         printf("┤%s\n", ANSI_RESET);
 
-        /* Row 3a: DESC */
-        char desc_str[256];
-        snprintf(desc_str, sizeof(desc_str), "DESC   : %.38s", commits[selected].subject);
-        print_modal_row(left_pad, "  ", desc_str, card_w, 0, 1);
+        /* Row 3a: DESC in Yellow (Image 1 & 4) */
+        print_modal_field(left_pad, "DESC", ANSI_BRIGHT_WHITE, commits[selected].subject, ANSI_BRIGHT_YELLOW, card_w);
 
-        /* Row 3b: ID */
-        char id_str[256];
-        snprintf(id_str, sizeof(id_str), "ID     : %s", commits[selected].hash);
-        print_modal_row(left_pad, "  ", id_str, card_w, 0, 1);
+        /* Row 3b: ID in Green (Image 1 & 4) */
+        print_modal_field(left_pad, "ID", ANSI_BRIGHT_WHITE, commits[selected].hash, ANSI_BRIGHT_GREEN, card_w);
 
-        /* Row 3c: Author */
-        char author_str[256];
-        snprintf(author_str, sizeof(author_str), "Author : %s", commits[selected].author);
-        print_modal_row(left_pad, "  ", author_str, card_w, 0, 1);
+        /* Row 3c: Author in White (Image 1 & 4) */
+        print_modal_field(left_pad, "Author", ANSI_BRIGHT_WHITE, commits[selected].author, ANSI_BRIGHT_WHITE, card_w);
 
-        /* Row 3d: Date */
-        char date_str[256];
-        snprintf(date_str, sizeof(date_str), "Date   : %s", commits[selected].date);
-        print_modal_row(left_pad, "  ", date_str, card_w, 0, 1);
+        /* Row 3d: Date in White (Image 1 & 4) */
+        print_modal_field(left_pad, "Date", ANSI_BRIGHT_WHITE, commits[selected].date, ANSI_BRIGHT_WHITE, card_w);
 
         /* Row 4: Divider */
         for (int i = 0; i < left_pad; i++) printf(" ");
@@ -122,37 +145,50 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
         for (int i = 0; i < bottom_pad; i++) printf("\n");
 
     } else {
-        /* MAIN COMMIT LIST VIEW - Clean & Uncluttered */
+        /* MAIN COMMIT LIST VIEW - Fully Centered */
 
         /* Header Title Centered */
         int title_len = 34;
-        int title_pad = margin + (width - title_len) / 2;
+        int title_pad = (cols - title_len) / 2;
         if (title_pad < 0) title_pad = 0;
 
         printf("\n");
         for (int i = 0; i < title_pad; i++) printf(" ");
         printf("%s%s=== MGIT TUI HISTORY INSPECTOR ===%s\n", ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_RESET);
         
-        /* Status Line Centered */
-        for (int i = 0; i < margin; i++) printf(" ");
-        printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s",
-               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
-               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
-
+        /* Status Line Centered (Image 3) */
         int is_detached = (strcmp(branch, "HEAD") == 0 || strncmp(branch, "(HEAD detached", 14) == 0);
+        char status_str[128];
+        if (is_detached) {
+            snprintf(status_str, sizeof(status_str), "Detached HEAD");
+        } else if (behind_count > 0) {
+            snprintf(status_str, sizeof(status_str), "Pull Needed (%d behind)", behind_count);
+        } else if (ahead_count > 0) {
+            snprintf(status_str, sizeof(status_str), "Ahead (%d commits)", ahead_count);
+        } else {
+            snprintf(status_str, sizeof(status_str), "Up to date");
+        }
+
+        char full_status_plain[256];
+        snprintf(full_status_plain, sizeof(full_status_plain), "Branch: %s | Commits: %d | Status: %s", branch, count, status_str);
+        int status_len = strlen(full_status_plain);
+        int status_pad = (cols - status_len) / 2;
+        if (status_pad < 0) status_pad = 0;
+
+        for (int i = 0; i < status_pad; i++) printf(" ");
+        printf("%sBranch:%s %s%s%s | %sCommits:%s %s%d%s | %sStatus:%s ",
+               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
+               ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET,
+               ANSI_BRIGHT_BLUE, ANSI_RESET);
 
         if (is_detached) {
-            printf(" | %sStatus:%s %sDetached HEAD%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+            printf("%sDetached HEAD%s\n", ANSI_BRIGHT_YELLOW, ANSI_RESET);
         } else if (behind_count > 0) {
-            printf(" | %sStatus:%s %sPull Needed (%d behind)%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_YELLOW, behind_count, ANSI_RESET);
+            printf("%sPull Needed (%d behind)%s\n", ANSI_BRIGHT_YELLOW, behind_count, ANSI_RESET);
         } else if (ahead_count > 0) {
-            printf(" | %sStatus:%s %sAhead (%d commits)%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_CYAN, ahead_count, ANSI_RESET);
+            printf("%sAhead (%d commits)%s\n", ANSI_BRIGHT_CYAN, ahead_count, ANSI_RESET);
         } else {
-            printf(" | %sStatus:%s %sUp to date%s\n",
-                   ANSI_BRIGHT_BLUE, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
+            printf("%sUp to date%s\n", ANSI_BRIGHT_GREEN, ANSI_RESET);
         }
 
         /* Top Divider */
@@ -217,7 +253,7 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
     /* Centered Minimal Footer Bar: [P] Pull  [Q/ESC] Quit */
     int footer_len = 22;
-    int footer_pad = margin + (width - footer_len) / 2;
+    int footer_pad = (cols - footer_len) / 2;
     if (footer_pad < 0) footer_pad = 0;
 
     for (int i = 0; i < footer_pad; i++) printf(" ");
