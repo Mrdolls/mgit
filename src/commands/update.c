@@ -7,24 +7,24 @@ int cmd_update(int argc, char **argv) {
     (void)argc;
     (void)argv;
 
-    printf("%s[mgit] Checking for updates...%s\n", ANSI_CYAN, ANSI_RESET);
+    printf("\n%s %sChecking for updates...%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
 
     /* Try git pull if in source repo or run installer */
     int ret = system("git pull origin master");
     if (ret == 0) {
-        printf("%s[mgit] Rebuilding mgit executable...%s\n", ANSI_CYAN, ANSI_RESET);
+        printf("%s %sRebuilding mgit executable...%s\n", MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET);
         system("make");
-        printf("%s[mgit] Update complete!%s\n", ANSI_GREEN, ANSI_RESET);
+        printf("\n%s %sUpdate complete!%s\n\n", MGIT_SUCCESS_BADGE, ANSI_BRIGHT_GREEN, ANSI_RESET);
         return 0;
     }
 
-    printf("%s[mgit] Running remote update script...%s\n", ANSI_CYAN, ANSI_RESET);
+    printf("%s %sRunning remote update script...%s\n", MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET);
     ret = system("curl -sSL https://raw.githubusercontent.com/Mrdolls/mgit/master/install.sh | bash");
 
     if (ret == 0) {
-        printf("%s[mgit] Successfully updated to the latest version.%s\n", ANSI_GREEN, ANSI_RESET);
+        printf("\n%s %sSuccessfully updated to the latest version.%s\n\n", MGIT_SUCCESS_BADGE, ANSI_BRIGHT_GREEN, ANSI_RESET);
     } else {
-        printf("%s[mgit] Failed to update mgit.%s\n", ANSI_RED, ANSI_RESET);
+        printf("\n%s %sFailed to update mgit.%s\n\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
     }
 
     return ret;

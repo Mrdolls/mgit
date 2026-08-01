@@ -8,7 +8,7 @@ int cmd_uninstall(int argc, char **argv) {
     (void)argc;
     (void)argv;
 
-    printf("%s[mgit] Starting uninstallation of mgit...%s\n", ANSI_YELLOW, ANSI_RESET);
+    printf("\n%s %sStarting uninstallation of mgit...%s\n", MGIT_INFO_BADGE, ANSI_BOLD, ANSI_RESET);
 
     char *home = getenv("HOME");
     if (!home) home = getenv("USERPROFILE");
@@ -73,6 +73,6 @@ int cmd_uninstall(int argc, char **argv) {
         }
     }
 
-    printf("%s[mgit] mgit has been cleanly uninstalled.%s\n", ANSI_GREEN, ANSI_RESET);
+    printf("\n%s %smgit has been cleanly uninstalled.%s\n\n", MGIT_SUCCESS_BADGE, ANSI_BRIGHT_GREEN, ANSI_RESET);
     return 0;
 }

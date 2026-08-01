@@ -8,6 +8,7 @@
 #endif
 
 #include "git_utils.h"
+#include "term_utils.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -37,13 +38,15 @@ int git_get_current_branch(char *buf, size_t size) {
 }
 
 int git_add_all(void) {
-    printf("[mgit] Running: git add .\n");
+    printf("%s %sStaging files%s (%sgit add .%s)\n",
+           MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
     return system("git add .");
 }
 
 int git_commit(const char *message) {
     char cmd[1024];
-    printf("[mgit] Running: git commit -m \"%s\"\n", message);
+    printf("%s %sCreating commit%s (%sgit commit -m \"%s\"%s)\n",
+           MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_YELLOW, message, ANSI_RESET);
     snprintf(cmd, sizeof(cmd), "git commit -m \"%s\"", message);
     return system(cmd);
 }
@@ -51,10 +54,12 @@ int git_commit(const char *message) {
 int git_push(const char *branch) {
     char cmd[1024];
     if (branch && strlen(branch) > 0) {
-        printf("[mgit] Running: git push origin %s\n", branch);
+        printf("%s %sPushing to remote%s (%sgit push origin %s%s)\n",
+               MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_MAGENTA, branch, ANSI_RESET);
         snprintf(cmd, sizeof(cmd), "git push origin %s", branch);
     } else {
-        printf("[mgit] Running: git push\n");
+        printf("%s %sPushing to remote%s (%sgit push%s)\n",
+               MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_MAGENTA, ANSI_RESET);
         snprintf(cmd, sizeof(cmd), "git push");
     }
     return system(cmd);
@@ -62,14 +67,16 @@ int git_push(const char *branch) {
 
 int git_checkout(const char *target) {
     char cmd[1024];
-    printf("[mgit] Running: git checkout %s\n", target);
+    printf("%s %sChecking out%s (%sgit checkout %s%s)\n",
+           MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, target, ANSI_RESET);
     snprintf(cmd, sizeof(cmd), "git checkout %s", target);
     return system(cmd);
 }
 
 int git_reset_hard(const char *target) {
     char cmd[1024];
-    printf("[mgit] Running: git reset --hard %s\n", target);
+    printf("%s %sResetting hard%s (%sgit reset --hard %s%s)\n",
+           MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_RED, target, ANSI_RESET);
     snprintf(cmd, sizeof(cmd), "git reset --hard %s", target);
     return system(cmd);
 }

@@ -9,11 +9,15 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
     (void)cols;
     term_clear_screen();
 
-    printf("%s%s--- MGIT TUI History Inspector ---%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
-    printf("Current Branch: %s%s%s | Total Commits: %d\n", ANSI_YELLOW, branch, ANSI_RESET, count);
-    printf("================================================================================\n");
+    printf("%s%s┌─────────────────────────────────────────────────────────────────────────────┐%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
+    printf("%s%s│                      MGIT TUI HISTORY INSPECTOR                             │%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
+    printf("%s%s└─────────────────────────────────────────────────────────────────────────────┘%s\n", ANSI_BOLD, ANSI_CYAN, ANSI_RESET);
+    printf(" %sBranch:%s %s%s%s | %sCommits:%s %s%d%s\n",
+           ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
+           ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
+    printf("%s───────────────────────────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
 
-    int max_display = rows - 6;
+    int max_display = rows - 7;
     if (max_display < 1) max_display = 1;
 
     int start_index = 0;
@@ -26,25 +30,25 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
 
     for (int i = start_index; i < end_index; i++) {
         if (i == selected) {
-            printf("%s %s %-7s | %-12s | %-12s | %-.40s %s\n",
+            printf("%s %s %-7s │ %-12.12s │ %-12.12s │ %-.40s %s\n",
                    ANSI_BG_CYAN, ANSI_BOLD,
                    commits[i].hash, commits[i].author, commits[i].date, commits[i].subject,
                    ANSI_RESET);
         } else {
-            printf("   %s%-7s%s | %-12s | %s%-12s%s | %-.40s\n",
-                   ANSI_YELLOW, commits[i].hash, ANSI_RESET,
-                   commits[i].author,
-                   ANSI_DIM, commits[i].date, ANSI_RESET,
-                   commits[i].subject);
+            printf("   %s%-7s%s │ %s%-12.12s%s │ %s%-12.12s%s │ %s%-.40s%s\n",
+                   ANSI_BRIGHT_YELLOW, commits[i].hash, ANSI_RESET,
+                   ANSI_BRIGHT_WHITE, commits[i].author, ANSI_RESET,
+                   ANSI_BRIGHT_BLACK, commits[i].date, ANSI_RESET,
+                   ANSI_RESET, commits[i].subject, ANSI_RESET);
         }
     }
 
-    printf("================================================================================\n");
-    printf("%s[UP/DOWN]%s Navigate | %s[S]%s Switch (checkout) | %s[R]%s Restauration (reset --hard) | %s[Q]%s Quit\n",
-           ANSI_BOLD, ANSI_RESET,
-           ANSI_BOLD, ANSI_RESET,
-           ANSI_BOLD, ANSI_RESET,
-           ANSI_BOLD, ANSI_RESET);
+    printf("%s───────────────────────────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
+    printf("%s[UP/DOWN]%s Navigate  %s[S]%s Switch (checkout)  %s[R]%s Restauration (reset --hard)  %s[Q]%s Quit\n",
+           ANSI_BRIGHT_CYAN, ANSI_RESET,
+           ANSI_BRIGHT_GREEN, ANSI_RESET,
+           ANSI_BRIGHT_RED, ANSI_RESET,
+           ANSI_BRIGHT_YELLOW, ANSI_RESET);
     fflush(stdout);
 }
 
@@ -53,7 +57,7 @@ int cmd_show(int argc, char **argv) {
     (void)argv;
 
     if (!git_is_repository()) {
-        printf("%sError: Not a git repository.%s\n", ANSI_RED, ANSI_RESET);
+        printf("%s %sError: Not a git repository.%s\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
         return 1;
     }
 
@@ -64,7 +68,7 @@ int cmd_show(int argc, char **argv) {
     int count = 0;
 
     if (!git_get_history(&commits, &count) || count == 0) {
-        printf("%sError: Could not retrieve git history or history is empty.%s\n", ANSI_RED, ANSI_RESET);
+        printf("%s %sCould not retrieve git history or history is empty.%s\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
         return 1;
     }
 
@@ -99,16 +103,17 @@ int cmd_show(int argc, char **argv) {
             case KEY_SWITCH: {
                 term_disable_raw_mode();
                 term_clear_screen();
-                printf("%s[mgit] Switch (git checkout)%s\n", ANSI_BOLD, ANSI_RESET);
-                printf("Target Commit: %s (%s)\n", commits[selected].hash, commits[selected].subject);
-                printf("Are you sure you want to checkout this commit? (y/N): ");
+                printf("\n%s %sSWITCH COMMIT (git checkout)%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
+                printf("%s Target Commit : %s%s (%s)%s\n", ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
+                printf("\n%sAre you sure you want to checkout this commit? (y/N): %s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
                 fflush(stdout);
 
                 char response[16] = "";
                 if (fgets(response, sizeof(response), stdin) && (response[0] == 'y' || response[0] == 'Y')) {
+                    printf("\n");
                     git_checkout(commits[selected].hash);
                 } else {
-                    printf("Operation cancelled.\n");
+                    printf("\n%sOperation cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
                 }
                 printf("\nPress ENTER to return to TUI...");
                 fflush(stdout);
@@ -127,22 +132,23 @@ int cmd_show(int argc, char **argv) {
             case KEY_RESTORE: {
                 term_disable_raw_mode();
                 term_clear_screen();
-                printf("%s%s[WARNING] RESTAURATION (git reset --hard)%s\n", ANSI_BOLD, ANSI_RED, ANSI_RESET);
-                printf("%sThis operation will PERMANENTLY ERASE all uncommitted changes!%s\n\n", ANSI_RED, ANSI_RESET);
-                printf("Target Commit: %s (%s)\n", commits[selected].hash, commits[selected].subject);
-                printf("Are you absolutely sure you want to proceed? (type 'yes' to confirm): ");
+                printf("\n%s %sRESTAURATION (git reset --hard)%s\n", MGIT_ERROR_BADGE, ANSI_BOLD, ANSI_RESET);
+                printf("%sThis operation will PERMANENTLY ERASE all uncommitted changes!%s\n\n", ANSI_BRIGHT_RED, ANSI_RESET);
+                printf("%s Target Commit : %s%s (%s)%s\n", ANSI_BRIGHT_BLACK, ANSI_BOLD, commits[selected].hash, commits[selected].subject, ANSI_RESET);
+                printf("\n%sAre you absolutely sure you want to proceed? (type 'yes' to confirm): %s", ANSI_BRIGHT_YELLOW, ANSI_RESET);
                 fflush(stdout);
 
                 char response[16] = "";
                 if (fgets(response, sizeof(response), stdin)) {
                     response[strcspn(response, "\r\n")] = '\0';
                     if (strcmp(response, "yes") == 0 || strcmp(response, "y") == 0 || strcmp(response, "Y") == 0) {
+                        printf("\n");
                         git_reset_hard(commits[selected].hash);
                     } else {
-                        printf("Restauration cancelled.\n");
+                        printf("\n%sRestauration cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
                     }
                 } else {
-                    printf("Restauration cancelled.\n");
+                    printf("\n%sRestauration cancelled.%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
                 }
                 printf("\nPress ENTER to return to TUI...");
                 fflush(stdout);
