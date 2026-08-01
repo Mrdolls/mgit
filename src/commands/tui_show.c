@@ -6,7 +6,7 @@
 #include <string.h>
 
 static void draw_tui(CommitInfo *commits, int count, int selected, const char *branch,
-                     const char *head_hash, int behind_count, int rows, int cols) {
+                     const char *head_hash, int behind_count, int ahead_count, int rows, int cols) {
     term_clear_screen();
 
     if (cols < 70) cols = 80;
@@ -26,9 +26,17 @@ static void draw_tui(CommitInfo *commits, int count, int selected, const char *b
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, branch, ANSI_RESET,
            ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, count, ANSI_RESET);
 
-    if (behind_count > 0) {
-        printf(" | %sStatus:%s %sPULL NEEDED (%d behind)%s\n",
+    int is_detached = (strcmp(branch, "HEAD") == 0 || strncmp(branch, "(HEAD detached", 14) == 0);
+
+    if (is_detached) {
+        printf(" | %sStatus:%s %sDetached HEAD%s\n",
+               ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+    } else if (behind_count > 0) {
+        printf(" | %sStatus:%s %sPull Needed (%d behind)%s\n",
                ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_YELLOW, behind_count, ANSI_RESET);
+    } else if (ahead_count > 0) {
+        printf(" | %sStatus:%s %sAhead (%d commits)%s\n",
+               ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_CYAN, ahead_count, ANSI_RESET);
     } else {
         printf(" | %sStatus:%s %sUp to date%s\n",
                ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BRIGHT_GREEN, ANSI_RESET);
@@ -130,7 +138,7 @@ int cmd_show(int argc, char **argv) {
         int rows = 24, cols = 80;
         term_get_size(&rows, &cols);
 
-        draw_tui(commits, count, selected, branch, head_hash, behind_count, rows, cols);
+        draw_tui(commits, count, selected, branch, head_hash, behind_count, ahead_count, rows, cols);
 
         KeyCode key = term_read_key();
 
