@@ -1,12 +1,10 @@
 # Build output
 *.o
 *.exe
+mgit
 mg
-mg.exe
-NUL
-nul
 
-# IDE / OS
+# OS / IDE
+.DS_Store
 .vscode/
 .idea/
-.DS_Store

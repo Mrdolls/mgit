@@ -22,10 +22,10 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(TARGET).exe 2>/dev/null || del /f /q src\*.o src\utils\*.o src\commands\*.o $(TARGET).exe 2>NUL || true
+	rm -f $(OBJS) $(TARGET) $(TARGET).exe
 
 install: $(TARGET)
 	mkdir -p $(HOME)/.mgit/bin
-	cp $(TARGET)* $(HOME)/.mgit/bin/
+	cp $(TARGET) $(HOME)/.mgit/bin/
 
 .PHONY: all clean install
