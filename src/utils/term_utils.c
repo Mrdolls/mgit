@@ -12,6 +12,7 @@ static int raw_mode_enabled = 0;
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 static struct termios orig_termios;
 static int raw_mode_enabled = 0;
 #endif
@@ -96,8 +97,19 @@ KeyCode term_read_key(void) {
     char c;
     if (read(STDIN_FILENO, &c, 1) != 1) return KEY_UNKNOWN;
 
-    if (c == 27) { /* Escape sequence */
-        char seq[3];
+    if (c == 27) { /* Escape sequence or standalone ESC */
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds);
+        struct timeval tv = {0, 50000}; /* 50ms timeout */
+
+        int res = select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+        if (res <= 0) {
+            /* No follow-up sequence bytes -> standalone ESC key! */
+            return KEY_ESC;
+        }
+
+        char seq[2];
         if (read(STDIN_FILENO, &seq[0], 1) != 1) return KEY_ESC;
         if (read(STDIN_FILENO, &seq[1], 1) != 1) return KEY_ESC;
 
