@@ -1,0 +1,10 @@
+# Build output
+*.o
+*.exe
+mg
+mg.exe
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
