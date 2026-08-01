@@ -126,7 +126,7 @@ int git_commit(const char *message) {
 
 int git_push(const char *branch) {
     char cmd[1024];
-    if (branch && strlen(branch) > 0) {
+    if (branch && strlen(branch) > 0 && strcmp(branch, "HEAD") != 0) {
         printf("%s %sPushing to remote%s (%sgit push origin %s%s)\n",
                MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_MAGENTA, branch, ANSI_RESET);
 #ifdef _WIN32
@@ -148,15 +148,35 @@ int git_push(const char *branch) {
 
 int git_pull_quiet(const char *branch) {
     char cmd[1024];
-    if (branch && strlen(branch) > 0) {
+
+    if (branch && strlen(branch) > 0 && strcmp(branch, "HEAD") != 0 && strncmp(branch, "(HEAD", 5) != 0) {
         printf("%s %sPulling from remote%s (%sgit pull origin %s%s)\n",
                MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, branch, ANSI_RESET);
         snprintf(cmd, sizeof(cmd), "git pull origin %s", branch);
-    } else {
-        printf("%s %sPulling from remote%s (%sgit pull%s)\n",
-               MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
-        snprintf(cmd, sizeof(cmd), "git pull");
+        return system(cmd);
     }
+
+    /* Detached HEAD fallback: auto-detect default branch (master/main) and pull */
+    char default_branch[64] = "master";
+#ifdef _WIN32
+    if (system("git rev-parse --verify main > nul 2>&1") == 0) {
+        strcpy(default_branch, "main");
+    }
+#else
+    if (system("git rev-parse --verify main > /dev/null 2>&1") == 0) {
+        strcpy(default_branch, "main");
+    }
+#endif
+
+    printf("%s %sReconnecting to branch '%s' and pulling latest updates...%s\n",
+           MGIT_BADGE, ANSI_BOLD, default_branch, ANSI_RESET);
+
+#ifdef _WIN32
+    snprintf(cmd, sizeof(cmd), "git checkout %s && git pull origin %s", default_branch, default_branch);
+#else
+    snprintf(cmd, sizeof(cmd), "git checkout %s && git pull origin %s", default_branch, default_branch);
+#endif
+
     return system(cmd);
 }
 
