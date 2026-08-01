@@ -19,7 +19,7 @@ int cmd_update(int argc, char **argv) {
     }
 
     printf("%s[mgit] Running remote update script...%s\n", ANSI_CYAN, ANSI_RESET);
-    ret = system("curl -sSL https://raw.githubusercontent.com/VOTRE_PSEUDO/mgit/main/install.sh | bash");
+    ret = system("curl -sSL https://raw.githubusercontent.com/Mrdolls/mgit/main/install.sh | bash");
 
     if (ret == 0) {
         printf("%s[mgit] Successfully updated to the latest version.%s\n", ANSI_GREEN, ANSI_RESET);

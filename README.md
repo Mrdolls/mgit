@@ -18,13 +18,13 @@
 Run the one-line installer:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/VOTRE_PSEUDO/mgit/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Mrdolls/mgit/main/install.sh | bash
 ```
 
 Or build manually from source:
 
 ```bash
-git clone https://github.com/VOTRE_PSEUDO/mgit.git
+git clone git@github.com:Mrdolls/mgit.git
 cd mgit
 make
 make install

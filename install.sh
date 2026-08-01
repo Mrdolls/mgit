@@ -17,7 +17,7 @@ if [ -f "Makefile" ]; then
 else
     echo "[mgit] Cloning remote repository..."
     TMP_DIR=$(mktemp -d)
-    git clone https://github.com/VOTRE_PSEUDO/mgit.git "$TMP_DIR/mgit"
+    git clone https://github.com/Mrdolls/mgit.git "$TMP_DIR/mgit"
     cd "$TMP_DIR/mgit"
     make
     cp mg* "$BIN_DIR/"
