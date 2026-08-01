@@ -177,35 +177,28 @@ static int get_most_recent_branch(char *buf, size_t size) {
 }
 
 int git_pull_quiet(const char *branch) {
+    (void)branch;
     char cmd[1024];
 
-    /* If on a normal branch (not HEAD), pull directly */
-    if (branch && strlen(branch) > 0 && strcmp(branch, "HEAD") != 0 && strncmp(branch, "(HEAD", 5) != 0) {
-        printf("%s %sPulling from remote%s (%sgit pull origin %s%s)\n",
-               MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, branch, ANSI_RESET);
-        snprintf(cmd, sizeof(cmd), "git pull origin %s", branch);
-        return system(cmd);
-    }
-
-    /* Detached HEAD: automatically find the branch with the most recent commit */
-    char recent_branch[64] = "master";
-    if (!get_most_recent_branch(recent_branch, sizeof(recent_branch))) {
-        strcpy(recent_branch, "master");
+    /* Always detect the most recent active branch in the repository */
+    char target_branch[64] = "master";
+    if (!get_most_recent_branch(target_branch, sizeof(target_branch))) {
+        strcpy(target_branch, "master");
     }
 
     printf("%s %sSwitching to most recent branch '%s' and pulling latest updates...%s\n",
-           MGIT_BADGE, ANSI_BOLD, recent_branch, ANSI_RESET);
+           MGIT_BADGE, ANSI_BOLD, target_branch, ANSI_RESET);
 
 #ifdef _WIN32
     snprintf(cmd, sizeof(cmd), "git checkout %s 2>nul || git checkout -b %s origin/%s 2>nul",
-             recent_branch, recent_branch, recent_branch);
+             target_branch, target_branch, target_branch);
     system(cmd);
-    snprintf(cmd, sizeof(cmd), "git pull origin %s", recent_branch);
+    snprintf(cmd, sizeof(cmd), "git pull origin %s", target_branch);
 #else
     snprintf(cmd, sizeof(cmd), "git checkout %s 2>/dev/null || git checkout -b %s origin/%s 2>/dev/null",
-             recent_branch, recent_branch, recent_branch);
+             target_branch, target_branch, target_branch);
     system(cmd);
-    snprintf(cmd, sizeof(cmd), "git pull origin %s", recent_branch);
+    snprintf(cmd, sizeof(cmd), "git pull origin %s", target_branch);
 #endif
 
     return system(cmd);
