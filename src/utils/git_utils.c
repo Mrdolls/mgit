@@ -23,7 +23,7 @@ int git_is_repository(void) {
 
 int git_has_changes(void) {
 #ifdef _WIN32
-    FILE *fp = popen("git status --porcelain 2>NUL", "r");
+    FILE *fp = popen("git status --porcelain 2>nul", "r");
 #else
     FILE *fp = popen("git status --porcelain 2>/dev/null", "r");
 #endif
@@ -42,7 +42,7 @@ int git_has_changes(void) {
 
 int git_has_unpushed_commits(void) {
 #ifdef _WIN32
-    FILE *fp = popen("git log @{u}..HEAD --oneline 2>NUL", "r");
+    FILE *fp = popen("git log @{u}..HEAD --oneline 2>nul", "r");
 #else
     FILE *fp = popen("git log @{u}..HEAD --oneline 2>/dev/null", "r");
 #endif
@@ -61,7 +61,7 @@ int git_has_unpushed_commits(void) {
 
 int git_get_current_branch(char *buf, size_t size) {
 #ifdef _WIN32
-    FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>NUL", "r");
+    FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>nul", "r");
 #else
     FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>/dev/null", "r");
 #endif
@@ -80,7 +80,7 @@ int git_add_all(void) {
     printf("%s %sStaging files%s (%sgit add .%s)\n",
            MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
 #ifdef _WIN32
-    return system("git add . > NUL 2>&1");
+    return system("git add . > nul 2>&1");
 #else
     return system("git add . > /dev/null 2>&1");
 #endif
@@ -90,7 +90,11 @@ int git_commit(const char *message) {
     char cmd[1024];
     printf("%s %sCreating commit%s (%sgit commit -m \"%s\"%s)\n",
            MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_YELLOW, message, ANSI_RESET);
-    snprintf(cmd, sizeof(cmd), "git commit -q -m \"%s\"", message);
+#ifdef _WIN32
+    snprintf(cmd, sizeof(cmd), "git commit -q -m \"%s\" > nul 2>&1", message);
+#else
+    snprintf(cmd, sizeof(cmd), "git commit -q -m \"%s\" > /dev/null 2>&1", message);
+#endif
     return system(cmd);
 }
 
@@ -99,11 +103,19 @@ int git_push(const char *branch) {
     if (branch && strlen(branch) > 0) {
         printf("%s %sPushing to remote%s (%sgit push origin %s%s)\n",
                MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_MAGENTA, branch, ANSI_RESET);
-        snprintf(cmd, sizeof(cmd), "git push origin %s", branch);
+#ifdef _WIN32
+        snprintf(cmd, sizeof(cmd), "git push --quiet origin %s > nul 2>&1", branch);
+#else
+        snprintf(cmd, sizeof(cmd), "git push --quiet origin %s > /dev/null 2>&1", branch);
+#endif
     } else {
         printf("%s %sPushing to remote%s (%sgit push%s)\n",
                MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_MAGENTA, ANSI_RESET);
-        snprintf(cmd, sizeof(cmd), "git push");
+#ifdef _WIN32
+        snprintf(cmd, sizeof(cmd), "git push --quiet > nul 2>&1");
+#else
+        snprintf(cmd, sizeof(cmd), "git push --quiet > /dev/null 2>&1");
+#endif
     }
     return system(cmd);
 }
