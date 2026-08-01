@@ -28,14 +28,14 @@ fi
 SHELL_CONFIGS=("$HOME/.bashrc" "$HOME/.zshrc")
 
 for CONFIG in "${SHELL_CONFIGS[@]}"; do
-    if [ -f "$CONFIG" ]; then
-        if ! grep -q "mgit/bin" "$CONFIG"; then
-            echo "" >> "$CONFIG"
-            echo "# mgit CLI configuration" >> "$CONFIG"
-            echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$CONFIG"
-            echo "alias mg=\"$BIN_DIR/mg\"" >> "$CONFIG"
-            echo "[mgit] Added alias and PATH to $CONFIG"
-        fi
+    # Create file if it doesn't exist yet
+    touch "$CONFIG"
+    if ! grep -q "mgit/bin" "$CONFIG"; then
+        echo "" >> "$CONFIG"
+        echo "# mgit CLI configuration" >> "$CONFIG"
+        echo "export PATH=\"$BIN_DIR:\$PATH\"" >> "$CONFIG"
+        echo "alias mg=\"$BIN_DIR/mg\"" >> "$CONFIG"
+        echo "[mgit] Added alias and PATH to $CONFIG"
     fi
 done
 
