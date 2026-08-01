@@ -11,6 +11,8 @@ typedef struct {
 } CommitInfo;
 
 int git_is_repository(void);
+int git_has_changes(void);
+int git_has_unpushed_commits(void);
 int git_get_current_branch(char *buf, size_t size);
 int git_add_all(void);
 int git_commit(const char *message);

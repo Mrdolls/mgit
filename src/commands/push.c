@@ -11,6 +11,14 @@ int cmd_push(int argc, char **argv) {
         return 1;
     }
 
+    int has_changes = git_has_changes();
+    int has_unpushed = git_has_unpushed_commits();
+
+    if (!has_changes && !has_unpushed) {
+        printf("\n%s %sNothing to commit, working tree clean.%s\n\n", MGIT_INFO_BADGE, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        return 0;
+    }
+
     char message[1024] = "Auto push";
     if (argc > 0) {
         message[0] = '\0';
@@ -25,15 +33,25 @@ int cmd_push(int argc, char **argv) {
 
     printf("\n%s %sAutomated Push Workflow%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
     printf("%s  Branch  :%s %s%s%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_BOLD, ANSI_BRIGHT_CYAN, branch);
-    printf("%s  Message :%s %s\"%s\"%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_ITALIC, message, ANSI_RESET);
+    if (has_changes) {
+        printf("%s  Message :%s %s\"%s\"%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET, ANSI_ITALIC, message, ANSI_RESET);
+    }
     printf("%s──────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
 
-    if (git_add_all() != 0) {
-        printf("\n%s %sFailed to stage files.%s\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
-        return 1;
-    }
+    if (has_changes) {
+        if (git_add_all() != 0) {
+            printf("\n%s %sFailed to stage files.%s\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
+            return 1;
+        }
 
-    git_commit(message);
+        if (git_commit(message) != 0) {
+            printf("\n%s %sFailed to create commit.%s\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
+            return 1;
+        }
+    } else {
+        printf("%s %sNo new changes to commit, pushing unpushed commits...%s\n",
+               MGIT_STEP_PREFIX, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+    }
 
     if (git_push(branch) != 0) {
         printf("\n%s %sFailed to push changes to remote.%s\n", MGIT_ERROR_BADGE, ANSI_BRIGHT_RED, ANSI_RESET);
@@ -41,6 +59,6 @@ int cmd_push(int argc, char **argv) {
     }
 
     printf("%s──────────────────────────────────────────────────────────%s\n", ANSI_BRIGHT_BLACK, ANSI_RESET);
-    printf("%s %sSuccessfully pushed all changes to remote!%s\n\n", MGIT_SUCCESS_BADGE, ANSI_BRIGHT_GREEN, ANSI_RESET);
+    printf("%s %sSuccessfully pushed changes to remote!%s\n\n", MGIT_SUCCESS_BADGE, ANSI_BRIGHT_GREEN, ANSI_RESET);
     return 0;
 }

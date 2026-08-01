@@ -20,6 +20,44 @@ int git_is_repository(void) {
     return (ret == 0);
 }
 
+int git_has_changes(void) {
+#ifdef _WIN32
+    FILE *fp = popen("git status --porcelain 2>NUL", "r");
+#else
+    FILE *fp = popen("git status --porcelain 2>/dev/null", "r");
+#endif
+    if (!fp) return 0;
+    char buffer[512];
+    int has_changes = 0;
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (strlen(buffer) > 0) {
+            has_changes = 1;
+            break;
+        }
+    }
+    pclose(fp);
+    return has_changes;
+}
+
+int git_has_unpushed_commits(void) {
+#ifdef _WIN32
+    FILE *fp = popen("git log @{u}..HEAD --oneline 2>NUL", "r");
+#else
+    FILE *fp = popen("git log @{u}..HEAD --oneline 2>/dev/null", "r");
+#endif
+    if (!fp) return 0;
+    char buffer[512];
+    int unpushed = 0;
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (strlen(buffer) > 0) {
+            unpushed = 1;
+            break;
+        }
+    }
+    pclose(fp);
+    return unpushed;
+}
+
 int git_get_current_branch(char *buf, size_t size) {
 #ifdef _WIN32
     FILE *fp = popen("git rev-parse --abbrev-ref HEAD 2>NUL", "r");
@@ -40,14 +78,18 @@ int git_get_current_branch(char *buf, size_t size) {
 int git_add_all(void) {
     printf("%s %sStaging files%s (%sgit add .%s)\n",
            MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
-    return system("git add .");
+#ifdef _WIN32
+    return system("git add . > NUL 2>&1");
+#else
+    return system("git add . > /dev/null 2>&1");
+#endif
 }
 
 int git_commit(const char *message) {
     char cmd[1024];
     printf("%s %sCreating commit%s (%sgit commit -m \"%s\"%s)\n",
            MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_YELLOW, message, ANSI_RESET);
-    snprintf(cmd, sizeof(cmd), "git commit -m \"%s\"", message);
+    snprintf(cmd, sizeof(cmd), "git commit -q -m \"%s\"", message);
     return system(cmd);
 }
 
