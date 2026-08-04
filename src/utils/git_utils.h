@@ -16,6 +16,8 @@ int git_has_unpushed_commits(void);
 int git_get_current_branch(char *buf, size_t size);
 int git_get_head_hash(char *buf, size_t size);
 int git_check_pull_status(int *behind_count, int *ahead_count);
+void git_show_changes_summary(void);
+void git_show_unpushed_summary(const char *branch);
 int git_add_all(void);
 int git_commit(const char *message);
 int git_push(const char *branch);

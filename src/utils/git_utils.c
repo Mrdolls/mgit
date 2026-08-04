@@ -102,6 +102,79 @@ int git_check_pull_status(int *behind_count, int *ahead_count) {
     return 1;
 }
 
+void git_show_changes_summary(void) {
+#ifdef _WIN32
+    FILE *fp = popen("git status --short 2>nul", "r");
+#else
+    FILE *fp = popen("git status --short 2>/dev/null", "r");
+#endif
+    if (!fp) return;
+
+    char line[256];
+    int count = 0;
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (strlen(line) == 0) continue;
+
+        if (count == 0) {
+            printf("\n  %s%sFiles to commit:%s\n", ANSI_BOLD, ANSI_BRIGHT_YELLOW, ANSI_RESET);
+        }
+
+        char code[3] = "  ";
+        if (strlen(line) >= 2) {
+            code[0] = line[0];
+            code[1] = line[1];
+        }
+        char *filename = (strlen(line) >= 3) ? line + 3 : line;
+
+        if (code[0] == 'M' || code[1] == 'M') {
+            printf("    %s%s%s  %s\n", ANSI_BRIGHT_YELLOW, code, ANSI_RESET, filename);
+        } else if (code[0] == 'A' || code[1] == 'A' || (code[0] == '?' && code[1] == '?')) {
+            printf("    %s%s%s  %s\n", ANSI_BRIGHT_GREEN, code, ANSI_RESET, filename);
+        } else if (code[0] == 'D' || code[1] == 'D') {
+            printf("    %s%s%s  %s\n", ANSI_BRIGHT_RED, code, ANSI_RESET, filename);
+        } else {
+            printf("    %s%s%s  %s\n", ANSI_BRIGHT_CYAN, code, ANSI_RESET, filename);
+        }
+        count++;
+    }
+    pclose(fp);
+}
+
+void git_show_unpushed_summary(const char *branch) {
+    char cmd[512];
+    if (branch && strlen(branch) > 0 && strcmp(branch, "HEAD") != 0) {
+#ifdef _WIN32
+        snprintf(cmd, sizeof(cmd), "git log origin/%s..HEAD --oneline 2>nul", branch);
+#else
+        snprintf(cmd, sizeof(cmd), "git log origin/%s..HEAD --oneline 2>/dev/null", branch);
+#endif
+    } else {
+#ifdef _WIN32
+        snprintf(cmd, sizeof(cmd), "git log @{u}..HEAD --oneline 2>nul");
+#else
+        snprintf(cmd, sizeof(cmd), "git log @{u}..HEAD --oneline 2>/dev/null");
+#endif
+    }
+
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return;
+
+    char line[256];
+    int count = 0;
+    while (fgets(line, sizeof(line), fp) != NULL) {
+        line[strcspn(line, "\r\n")] = '\0';
+        if (strlen(line) == 0) continue;
+
+        if (count == 0) {
+            printf("\n  %s%sUnpushed commits to push:%s\n", ANSI_BOLD, ANSI_BRIGHT_CYAN, ANSI_RESET);
+        }
+        printf("    %s%s%s\n", ANSI_BRIGHT_WHITE, line, ANSI_RESET);
+        count++;
+    }
+    pclose(fp);
+}
+
 int git_add_all(void) {
     printf("%s %sStaging files%s (%sgit add .%s)\n",
            MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET, ANSI_BRIGHT_CYAN, ANSI_RESET);
