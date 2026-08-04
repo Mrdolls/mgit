@@ -9,8 +9,13 @@ int cmd_update(int argc, char **argv) {
 
     printf("\n%s %sChecking for updates...%s\n", MGIT_BADGE, ANSI_BOLD, ANSI_RESET);
 
-    /* Try git pull if in source repo or run installer */
-    int ret = system("git pull origin master");
+    /* Quietly check if we are in the source repository */
+#ifdef _WIN32
+    int ret = system("git pull origin master > nul 2>&1");
+#else
+    int ret = system("git pull origin master > /dev/null 2>&1");
+#endif
+
     if (ret == 0) {
         printf("%s %sRebuilding mgit executable...%s\n", MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET);
         system("make");
@@ -18,7 +23,7 @@ int cmd_update(int argc, char **argv) {
         return 0;
     }
 
-    printf("%s %sRunning remote update script...%s\n", MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET);
+    printf("%s %sDownloading and installing latest version from GitHub...%s\n", MGIT_STEP_PREFIX, ANSI_BOLD, ANSI_RESET);
     ret = system("curl -sSL https://raw.githubusercontent.com/Mrdolls/mgit/master/install.sh | bash");
 
     if (ret == 0) {
