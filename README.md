@@ -73,9 +73,3 @@ mgit update
 # Uninstall mgit
 mgit uninstall
 ```
-
----
-
-## License
-
-MIT License.
