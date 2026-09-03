@@ -73,3 +73,9 @@ mgit update
 # Uninstall mgit
 mgit uninstall
 ```
+
+## 📄 License
+
+Copyright © 2026 Mrdolls. All rights reserved.
+
+This is a personal project. Unauthorized copying, modification, or redistribution of the source code without prior permission is strictly prohibited. Feedback and suggestions via GitHub Issues are welcome!
